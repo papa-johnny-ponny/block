@@ -52,7 +52,7 @@ const rd=k=>{try{return JSON.parse(localStorage.getItem(k));}catch(e){return nul
 const wr=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let auth=rd(AUTH_KEY),meta=rd(META_KEY)||{},pending=false,running=false,timer=null;
-const ui={step:'email',email:'',msg:''};
+const ui={email:'',msg:''};
 
 async function api(path,opt={}){
   const res=await fetch(SB_URL+path,{...opt,headers:{apikey:SB_KEY,'Content-Type':'application/json',...(opt.headers||{})}});
@@ -129,15 +129,12 @@ function section(){
     <div class="srow"><div><b>${esc(auth.email||'Signed in')}</b><br><span id="syStatus">${esc(statusText())}</span></div></div>
     <div class="acts" style="margin:12px 0 0"><button class="btn-s" id="syNow">Sync now</button><button class="btn-s" id="syOut">Sign out</button></div>
     <p class="sub" id="syMsg" style="margin:8px 0 0">${meta.err?esc('Last sync failed: '+meta.err):''}</p>`;
-  if(ui.step==='code')return `<p class="grp">Sync</p>
-    <p class="sub" style="margin:0 0 10px">Enter the code sent to ${esc(ui.email)}.</p>
-    <input id="syCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Code">
-    <div class="acts" style="margin:8px 0 0"><button class="btn-s" id="syVerify">Sign in</button><button class="btn-s" id="syBack">Back</button></div>
-    <p class="sub" id="syMsg" style="margin:8px 0 0">${esc(ui.msg)}</p>`;
   return `<p class="grp">Sync</p>
-    <p class="sub" style="margin:0 0 10px">Sign in with your email to keep your log in step between iPhone and Mac.</p>
-    <input type="email" id="syEmail" autocomplete="email" placeholder="Email" value="${esc(ui.email)}">
-    <button class="btn-s" style="width:100%;margin-top:8px" id="sySend">Send code</button>
+    <p class="sub" style="margin:0 0 10px">Sign in to keep your log in step between iPhone and Mac.</p>
+    <form id="syForm" autocomplete="on">
+    <input type="email" id="syEmail" name="email" autocomplete="username" placeholder="Email" value="${esc(ui.email)}">
+    <input type="password" id="syPass" name="password" autocomplete="current-password" placeholder="Password" style="margin-top:8px">
+    <button type="submit" class="btn-s" style="width:100%;margin-top:8px" id="syIn">Sign in</button></form>
     <p class="sub" id="syMsg" style="margin:8px 0 0">${esc(ui.msg)}</p>`;
 }
 function wire(){
@@ -147,25 +144,16 @@ function wire(){
     q('syOut').onclick=()=>{if(!confirm('Sign out? Your log stays on this device.'))return;
       const a=auth;auth=null;meta={};wr(AUTH_KEY,null);wr(META_KEY,null);
       if(a&&a.access)api('/auth/v1/logout',{method:'POST',headers:{Authorization:'Bearer '+a.access}}).catch(()=>{});
-      ui.step='email';ui.msg='';renderSettings();};
+      ui.msg='';renderSettings();};
     return;
   }
-  if(ui.step==='code'){
-    const go=async()=>{const code=q('syCode').value.replace(/\s/g,'');if(!code)return;
-      q('syVerify').disabled=true;msg('Signing in…');
-      try{keep(await api('/auth/v1/verify',{method:'POST',body:JSON.stringify({type:'email',email:ui.email,token:code})}));
-        meta={};wr(META_KEY,meta);ui.step='email';ui.msg='';renderSettings();sync(true);}
-      catch(e){q('syVerify').disabled=false;msg('That code did not work: '+e.message);}};
-    q('syVerify').onclick=go;q('syCode').onkeydown=e=>{if(e.key==='Enter')go();};
-    q('syBack').onclick=()=>{ui.step='email';ui.msg='';renderSettings();};
-    return;
-  }
-  const send=async()=>{const email=q('syEmail').value.trim();if(!/^\S+@\S+\.\S+$/.test(email)){msg('Enter your email address.');return;}
-    q('sySend').disabled=true;msg('Sending…');
-    try{await api('/auth/v1/otp',{method:'POST',body:JSON.stringify({email,create_user:true})});
-      ui.email=email;ui.step='code';ui.msg='';renderSettings();}
-    catch(e){q('sySend').disabled=false;msg('Could not send the code: '+e.message);}};
-  q('sySend').onclick=send;q('syEmail').onkeydown=e=>{if(e.key==='Enter')send();};
+  q('syForm').onsubmit=async e=>{e.preventDefault();
+    const email=q('syEmail').value.trim(),password=q('syPass').value;
+    if(!email||!password){msg('Enter your email and password.');return;}
+    ui.email=email;q('syIn').disabled=true;msg('Signing in…');
+    try{keep(await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})}));
+      meta={};wr(META_KEY,meta);ui.msg='';renderSettings();sync(true);}
+    catch(err){q('syIn').disabled=false;msg('Could not sign in: '+err.message);}};
 }
 const _renderSettings=renderSettings;
 renderSettings=function(){_renderSettings();
