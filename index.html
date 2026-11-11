@@ -376,6 +376,12 @@ select{-webkit-appearance:none;appearance:none;font-size:15px;margin-bottom:8px}
 .hrow.currow span{color:#fff;font-weight:700}
 .hdel{flex:none;width:28px;height:28px;margin:-6px -6px -6px 0;border-radius:50%;color:var(--dim);font-size:18px;line-height:1;display:grid;place-items:center}
 .hdel:hover,.hdel:focus-visible{color:#fff;background:var(--surface-2)}
+.cdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:0 0 8px}
+.cdays .btn-s{padding:10px 0}
+.crow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.crow3 input,.crow3 select{margin:0;padding:11px 10px;font-size:15px;min-width:0}
+a.btn-s{color:inherit;text-decoration:none}
+.lnk{color:var(--text);text-decoration:underline;font-size:inherit}
 .est1{margin:10px 0 0;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:20px}
 .mini{background:var(--surface-2);color:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;flex:0 0 auto}
 .mmap{display:flex;align-items:flex-end;justify-content:center;gap:18px;background:var(--surface);border-radius:16px;padding:16px 12px 12px}
@@ -2726,7 +2732,7 @@ renderSettings=function(){_renderSettings();
     <div class="srow"><div><b>Sessions per week</b><br><span>Counts toward the streak on the home screen</span></div>
       <div class="sb2"><button id="gMinus" aria-label="Fewer">−</button><b id="gVal">${S.goal}</b><button id="gPlus" aria-label="More">+</button></div></div>
     <p class="grp">Backup</p>
-    <p class="sub" style="margin:0 0 10px">Your log lives in this browser only. Copy a backup now and then, and paste it back to restore.</p>
+    <p class="sub" style="margin:0 0 10px">Sync keeps your devices in step. A backup now and then is still a good idea: copy it, and paste it back to restore.</p>
     <div class="acts" style="margin:0"><button class="btn-s" id="bCopy">Copy backup</button><button class="btn-s" id="bShow">Restore…</button></div>
     <div id="bBox" class="hide" style="margin-top:10px"><textarea id="bText" placeholder="Paste a backup here"></textarea>
       <button class="btn-s" style="width:100%;margin-top:8px" id="bRestore">Restore from backup</button></div>
@@ -3634,5 +3640,5 @@ function finRender(){const o=document.getElementById('fin');if(!o||!FIN)return;
 /* programs listed A–Z */
 PROGRAMS.sort((a,b)=>a.n.localeCompare(b.n,'en',{sensitivity:'base',numeric:true}));
 load();show('home');renderHome();
-</script><script src="sync.js"></script>
+</script><script src="sync.js"></script><script src="cal.js"></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}</script></body></html>

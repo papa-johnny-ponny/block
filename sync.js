@@ -22,6 +22,7 @@ function merge(local,remote,localFresh){
   const out={};
   for(const k of new Set([...Object.keys(local),...Object.keys(remote)])){
     if(k==='sessions'||k==='sets'||k==='_del'||k==='_mt')continue;
+    if(k==='log'){out.log={...(older.log||{}),...(newer.log||{})};continue;}  // per exercise, so done marks from both devices survive
     if(LOCAL_ONLY.includes(k)){if(k in local)out[k]=local[k];continue;}
     out[k]=k in newer?newer[k]:older[k];
   }
@@ -42,7 +43,16 @@ function merge(local,remote,localFresh){
   return out;
 }
 
-if(typeof module!=='undefined'&&module.exports){module.exports={merge,canon,setId,strip};return;}
+/* skips made from a calendar event land in the cal_skips column; fold them into
+   the plan and drop them from the queue. Returns true when anything was folded. */
+function foldSkips(doc,skips){
+  if(!skips||!Object.keys(skips).length)return false;
+  const c=doc.cal;
+  if(c){c.skip={...(c.skip||{}),...skips};c.queue=(c.queue||[]).filter(x=>!skips[x.k]);doc._mt=Math.max(doc._mt||0,Date.now());}
+  return true;
+}
+
+if(typeof module!=='undefined'&&module.exports){module.exports={merge,canon,setId,strip,foldSkips};return;}
 
 /* ===== browser side ===== */
 const SB_URL='https://uuskbrhvpjybsmjpcokm.supabase.co';
@@ -54,6 +64,7 @@ const rd=k=>{try{return JSON.parse(localStorage.getItem(k));}catch(e){return nul
 const wr=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let auth=rd(AUTH_KEY),meta=rd(META_KEY)||{},pending=false,running=false,timer=null;
+let SEL='data,cal_skips';   // falls back to 'data' if the calendar column is not there yet
 const ui={email:'',msg:''};
 
 async function api(path,opt={}){
@@ -91,16 +102,19 @@ async function sync(force){
   try{
     const tk=await token();if(!tk)return;
     const H={Authorization:'Bearer '+tk};
-    const rows=await api('/rest/v1/block_state?select=data&user_id=eq.'+encodeURIComponent(auth.uid),{headers:H});
+    const get=()=>api('/rest/v1/block_state?select='+SEL+'&user_id=eq.'+encodeURIComponent(auth.uid),{headers:H});
+    let rows;
+    try{rows=await get();}catch(e){if(SEL!=='data'&&e.status===400){SEL='data';rows=await get();}else throw e;}
     const remote=rows&&rows[0]?rows[0].data:null;
     const local=JSON.parse(JSON.stringify(S));
     const merged=merge(local,remote,!!meta.last);
+    const folded=foldSkips(merged,rows&&rows[0]&&rows[0].cal_skips);
     if(canon(merged)!==canon(local))apply(merged);
     const up=strip(merged);
-    if(!remote||canon(up)!==canon(remote))
+    if(!remote||folded||canon(up)!==canon(remote))
       await api('/rest/v1/block_state?on_conflict=user_id',{method:'POST',
         headers:{...H,Prefer:'resolution=merge-duplicates,return=minimal'},
-        body:JSON.stringify({user_id:auth.uid,data:up,updated_at:new Date().toISOString()})});
+        body:JSON.stringify({user_id:auth.uid,data:up,updated_at:new Date().toISOString(),...(folded?{cal_skips:{}}:{})})});
     meta.last=Date.now();meta.err=null;
   }catch(e){meta.err=e.message||String(e);}
   finally{running=false;wr(META_KEY,meta);paint();if(pending)setTimeout(sync,800);}
@@ -165,5 +179,6 @@ renderSettings=function(){_renderSettings();
 /* ----- when to sync ----- */
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sync();});
 window.addEventListener('online',()=>sync());
+window.BLOCK_SYNC={signedIn:()=>!!auth};
 if(auth)sync();
 })();
