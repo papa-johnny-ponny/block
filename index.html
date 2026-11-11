@@ -2202,7 +2202,9 @@ function recordSet(prog,key,idx,ex,data,sid){
   S.sets.push({sid,t:Date.now(),prog,key,idx,ex:ex.key,name:ex.n,...data});save();}
 function unrecordLast(prog,key,idx,sid){sid=sid||curSid(prog,key);if(!sid)return;
   for(let i=S.sets.length-1;i>=0;i--){const r=S.sets[i];
-    if(r.sid===sid&&r.prog===prog&&r.key===key&&r.idx===idx){S.sets.splice(i,1);break;}}save();}
+    if(r.sid===sid&&r.prog===prog&&r.key===key&&r.idx===idx){
+      (S._del=S._del||{})[r.sid+'|'+r.t+'|'+r.idx]=Date.now();/* tombstone so sync does not bring it back */
+      S.sets.splice(i,1);break;}}save();}
 /* Previous = the most recent earlier session that logged this exercise */
 function previousOf(exKey,sid){let last=null;
   for(let i=S.sets.length-1;i>=0;i--){const r=S.sets[i];if(r.ex===exKey&&r.sid!==sid&&!r.check){last=r.sid;break;}}
@@ -3626,4 +3628,5 @@ function finRender(){const o=document.getElementById('fin');if(!o||!FIN)return;
 /* programs listed A–Z */
 PROGRAMS.sort((a,b)=>a.n.localeCompare(b.n,'en',{sensitivity:'base',numeric:true}));
 load();show('home');renderHome();
-</script><script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}</script></body></html>
+</script><script src="sync.js"></script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}</script></body></html>
