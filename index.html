@@ -374,6 +374,8 @@ select{-webkit-appearance:none;appearance:none;font-size:15px;margin-bottom:8px}
 .rests button.on{background:#fff;color:#000}
 .hrow.dimrow{opacity:.45}
 .hrow.currow span{color:#fff;font-weight:700}
+.hdel{flex:none;width:28px;height:28px;margin:-6px -6px -6px 0;border-radius:50%;color:var(--dim);font-size:18px;line-height:1;display:grid;place-items:center}
+.hdel:hover,.hdel:focus-visible{color:#fff;background:var(--surface-2)}
 .est1{margin:10px 0 0;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:20px}
 .mini{background:var(--surface-2);color:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;flex:0 0 auto}
 .mmap{display:flex;align-items:flex-end;justify-content:center;gap:18px;background:var(--surface);border-radius:16px;padding:16px 12px 12px}
@@ -2197,6 +2199,9 @@ function openSession(prog,key){let s=findOpen(prog,key);
   if(!s){s={id:uid(),prog,key,start:Date.now(),end:null,note:''};S.sessions.push(s);}
   return s;}
 const curSid=(prog,key)=>{const s=findOpen(prog,key);return s?s.id:null;};
+/* removes a session and its sets; the tombstone keeps sync from bringing it back */
+function deleteSession(id){(S._del=S._del||{})['sess|'+id]=Date.now();
+  S.sessions=S.sessions.filter(s=>s.id!==id);S.sets=S.sets.filter(r=>r.sid!==id);save();renderHome();}
 function recordSet(prog,key,idx,ex,data,sid){
   sid=sid||openSession(prog,key).id;
   S.sets.push({sid,t:Date.now(),prog,key,idx,ex:ex.key,name:ex.n,...data});save();}
@@ -2634,7 +2639,7 @@ function renderCal(){
   const list=sessOnDay(CAL.day);
   let day=`<div class="dayp"><p class="dlab">${CAL.day===today?'Today':new Date(CAL.day+'T12:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</p>`;
   day+=list.length?list.map(s=>{const n=S.sets.filter(r=>r.sid===s.id&&!r.check&&r.score==null).length,P=progById(s.prog);
-    return `<div class="hrow"><span>${esc(P?P.n:s.prog)} · ${esc(titleOf(s.prog,s.key))}</span><b>${s.retro?'logged after':`${Math.round(durOf(s)/60000)} min${n?` · ${n} set${n===1?'':'s'}`:''}`}</b></div>`;}).join('')
+    return `<div class="hrow"><span>${esc(P?P.n:s.prog)} · ${esc(titleOf(s.prog,s.key))}</span><b>${s.retro?'logged after':`${Math.round(durOf(s)/60000)} min${n?` · ${n} set${n===1?'':'s'}`:''}`}</b><button class="hdel" data-del="${esc(s.id)}" aria-label="Delete session">×</button></div>`;}).join('')
     :`<p class="sub" style="margin:4px 0 0">No sessions.</p>`;
   if(CAL.day<=today){
     if(!CAL.form)day+=`<button class="btn-s" style="width:100%;margin-top:12px" id="calLog">Log a past session</button>`;
@@ -2653,6 +2658,7 @@ function renderCal(){
   q('calMore').onclick=()=>{CAL.open=!CAL.open;if(CAL.open){const d=new Date(CAL.day+'T12:00');CAL.month=new Date(d.getFullYear(),d.getMonth(),1).getTime();}renderCal();};
   if(q('calPrev'))q('calPrev').onclick=()=>{const d=new Date(CAL.month);CAL.month=new Date(d.getFullYear(),d.getMonth()-1,1).getTime();renderCal();};
   if(q('calNext'))q('calNext').onclick=()=>{const d=new Date(CAL.month);CAL.month=new Date(d.getFullYear(),d.getMonth()+1,1).getTime();renderCal();};
+  box.querySelectorAll('.hdel').forEach(b=>b.onclick=()=>{if(confirm('Delete this session and its logged sets?'))deleteSession(b.dataset.del);});
   if(q('calLog'))q('calLog').onclick=()=>{CAL.form=true;renderCal();};
   if(q('calProg'))q('calProg').onchange=e=>{CAL.prog=e.target.value;renderCal();};
   if(q('calCancel'))q('calCancel').onclick=()=>{CAL.form=false;renderCal();};

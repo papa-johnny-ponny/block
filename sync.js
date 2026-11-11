@@ -1,7 +1,7 @@
 /* BLOCK. sync — keeps the log in step between devices through Supabase.
    The whole app state (S) is one JSON row per user. Sessions and sets are
    merged by id so two devices never overwrite each other's training; deleted
-   sets leave a tombstone in S._del so they are not brought back. Everything
+   sets and sessions leave a tombstone in S._del so they are not brought back. Everything
    else (current program, settings, maxes) comes from whichever device saved
    last (S._mt). */
 (function(){
@@ -30,11 +30,13 @@ function merge(local,remote,localFresh){
   const sm=new Map();
   (older.sessions||[]).forEach(s=>sm.set(s.id,s));
   (newer.sessions||[]).forEach(s=>{const o=sm.get(s.id);sm.set(s.id,o&&o.end&&!s.end?o:s);});
-  out.sessions=[...sm.values()].sort((a,b)=>(a.start||0)-(b.start||0));
   const xm=new Map();
   (older.sets||[]).forEach(r=>xm.set(setId(r),r));
   (newer.sets||[]).forEach(r=>xm.set(setId(r),r));
   for(const id in del)xm.delete(id);
+  const gone=new Set(Object.keys(del).filter(k=>k.startsWith('sess|')).map(k=>k.slice(5)));
+  if(gone.size){gone.forEach(id=>sm.delete(id));for(const[k,r]of xm)if(gone.has(r.sid))xm.delete(k);}
+  out.sessions=[...sm.values()].sort((a,b)=>(a.start||0)-(b.start||0));
   out.sets=[...xm.values()].sort((a,b)=>(a.t||0)-(b.t||0));
   out._del=del;out._mt=Math.max(local._mt||0,rmt);
   return out;
