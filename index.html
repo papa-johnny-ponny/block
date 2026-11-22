@@ -134,6 +134,23 @@ main{padding-bottom:70px}
 .slist .r{font-size:11px;color:var(--dim-2);flex-shrink:0}
 .slist .r.on{color:#fff}
 .slist.done .t{color:var(--dim-2)}
+.sitem{border-bottom:1px solid var(--line)}
+.sitem .slist{border-bottom:0}
+.slist .r{display:inline-flex;align-items:center;gap:8px}
+.chev{width:12px;height:12px;color:var(--dim-2);transition:transform .2s ease}
+.sitem.open .chev{transform:rotate(180deg)}
+.sdet{padding:4px 2px 20px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px 18px}
+.sgh{grid-column:1/-1;margin:6px 0 -6px;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim-2)}
+.sx{min-width:0}
+.sx b{display:block;font-size:15px;font-weight:700;line-height:1.25}
+.sx span{display:block;margin-top:3px;color:var(--dim);font-size:13px}
+.sx small{display:block;margin-top:2px;color:var(--dim-2);font-size:12px;line-height:1.3}
+.sdet .acts{margin:18px 0 0;justify-content:flex-start}
+.sdet .acts .btn-s{flex:0 0 auto}
+.sltools{display:flex;justify-content:flex-end;margin:4px 0 -4px}
+.sltools .lnk{color:var(--dim);font-size:13px;font-weight:600;text-decoration:none;padding:6px 0}
+@media (prefers-reduced-motion:reduce){.chev{transition:none}}
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s}
 .scrim.on{opacity:1;pointer-events:auto}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#121214;border-radius:24px 24px 0 0;
@@ -1860,14 +1877,47 @@ function renderSessionList(P){
   P.days.forEach(d=>{
     const done=sessDone(P.id,d.key),cnt=sessCount(P.id,d.key);
     const total=realItems(sessionOf(P.id,d.key).items).length;
+    const w=document.createElement('div');w.className='sitem';
     const b=document.createElement('button');b.className='slist'+(done?' done':'');
     b.innerHTML=`<span class="l"><span class="e ${d.key===nextKey?'now':''}">${d.eyebrow}${d.key===nextKey?' · next':''}</span>
       <span class="t">${d.n}</span></span>
-      <span class="r ${!done&&d.hard?'on':''}">${done?'done':(cnt?`${cnt}/${total}`:(d.tag||(d.hard?'hard':'easy')))}</span>`;
-    b.onclick=()=>{S.sess=d.key;save();show('session');renderSession();};
-    box.appendChild(b);
+      <span class="r ${!done&&d.hard?'on':''}">${done?'done':(cnt?`${cnt}/${total}`:(d.tag||(d.hard?'hard':'easy')))}<svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+    const panel=document.createElement('div');panel.className='sdet';
+    b.onclick=()=>slSet(P,d,w,!w.classList.contains('open'));
+    w.append(b,panel);box.appendChild(w);
+    slSet(P,d,w,SLOPEN.has(P.id+'|'+d.key));
   });
 }
+/* ----- session overview: tap a session to see its exercises ----- */
+const SLOPEN=new Set();
+function slAmount(sp){const s=String(sp&&sp.s||'').trim();if(!s)return'';
+  let m=s.match(/^(\d+)D([\d-]+)$/i);if(m)return `${m[1]} × ${m[2]}`;
+  m=s.match(/^(\d+)D$/i);if(m)return `${m[1]} sets`;
+  return s.replace(/^(\d+(?:[–-]\d+)?)\s*[×x]\s*/,'$1 × ').replace(/ F$/,' to failure');}
+function slDetail(P,d){
+  const items=sessionOf(P.id,d.key).items;
+  let h='<div class="sgrid">';
+  for(const{item,idx,sp}of items){
+    if(item.grp){h+=`<p class="sgh">${esc(item.grp)}</p>`;continue;}
+    const k=logKey(P.id,d.key,idx),ex=exFor(item,k),D=densOf(item,k);
+    let a=D?(D.clock?`${D.clock} min`:'for time'):slAmount(sp);
+    if(!D&&sp&&sp.p!=null){const kg=loadFor(ex.key,sp.p);a+=(a?' · ':'')+(kg?`${kg} kg`:`${sp.p} %`);}
+    h+=`<div class="sx"><b>${esc(ex.n)}</b>${a?`<span>${esc(a)}</span>`:''}${sp&&sp.nt?`<small>${esc(sp.nt)}</small>`:''}</div>`;}
+  return h+`</div><div class="acts"><button class="btn-s on" data-go="start">Start session</button><button class="btn-s" data-go="open">Details</button></div>`;
+}
+function slSet(P,d,w,open){
+  const id=P.id+'|'+d.key,panel=w.querySelector('.sdet'),b=w.querySelector('.slist');
+  open?SLOPEN.add(id):SLOPEN.delete(id);
+  w.classList.toggle('open',open);b.setAttribute('aria-expanded',open);
+  if(open&&!panel.firstChild){panel.innerHTML=slDetail(P,d);
+    panel.querySelector('[data-go=start]').onclick=()=>playOpen(P.id,d.key);
+    panel.querySelector('[data-go=open]').onclick=()=>{S.sess=d.key;save();show('session');renderSession();};}
+  panel.hidden=!open;
+  slTools(P);
+}
+function slTools(P){const t=document.getElementById('slAll');if(!t)return;
+  const all=P.days.length&&P.days.every(d=>SLOPEN.has(P.id+'|'+d.key));
+  t.textContent=all?'Collapse all':'Expand all';t.setAttribute('aria-expanded',all);}
 
 function renderDense(){
   const w=S.week,d=S.day,B=blockFor(w);
@@ -3459,6 +3509,14 @@ renderSessionList=function(P){_rsl8(P);const days=P.days||[];if(!days.some(d=>d.
   const box=document.getElementById('sessionList'),btns=[...box.children];let last=null;
   days.forEach((d,i)=>{if(d.sec&&d.sec!==last&&btns[i]){const h=document.createElement('p');h.className='grp';
     h.textContent=d.sec;box.insertBefore(h,btns[i]);last=d.sec;}});};
+
+/* expand / collapse every session in the list */
+const _rsl9=renderSessionList;
+renderSessionList=function(P){_rsl9(P);
+  const box=document.getElementById('sessionList'),t=document.createElement('div');t.className='sltools';
+  t.innerHTML='<button id="slAll" class="lnk"></button>';box.prepend(t);slTools(P);
+  t.firstChild.onclick=()=>{const open=t.firstChild.textContent==='Expand all',items=[...box.querySelectorAll('.sitem')];
+    P.days.forEach((d,i)=>{if(items[i])slSet(P,d,items[i],open);});};};
 
 /* ----- exercise sheet additions ----- */
 const _openSheet8=openSheet;
