@@ -439,7 +439,7 @@ a.btn-s{color:inherit;text-decoration:none}
   <button class="sec" id="toOther23"><span><b>The Other 23 Hours</b><small>Walks, jump rope, evening mobility, floor sitting</small></span><span class="chev">›</span></button>
   <button class="sec" id="toMobility"><span><b>Mobility Routine</b><small>Follow-along · nine movements + neck bridge</small></span><span class="chev">›</span></button>
   <div class="note" id="homeNote"></div>
-  <p class="foot">Everything is stored locally in this browser. Nothing leaves the phone.</p>
+  <p class="foot">Your log is stored on this device and, once you sign in under Settings → Sync, kept in step with your other devices.</p>
 </section>
 
 <div id="v-program" class="hide">
@@ -3698,5 +3698,5 @@ function finRender(){const o=document.getElementById('fin');if(!o||!FIN)return;
 /* programs listed A–Z */
 PROGRAMS.sort((a,b)=>a.n.localeCompare(b.n,'en',{sensitivity:'base',numeric:true}));
 load();show('home');renderHome();
-</script><script src="sync.js"></script><script src="cal.js"></script><script src="videos.js"></script><script src="log.js"></script>
+</script><script src="sync.js"></script><script src="cal.js"></script><script src="videos.js"></script><script src="log.js"></script><script src="home.js"></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}</script></body></html>

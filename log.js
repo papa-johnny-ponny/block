@@ -432,6 +432,8 @@ const initials=n=>String(n||'').replace(/\(.*?\)/g,'').split(/[\s·-]+/).filter(
 function thumbHTML(ex,size){const t=thumbOf(ex);
   return `<span class="th" style="width:${size}px;height:${size}px" aria-hidden="true">${t?`<img src="${t}" alt="" loading="lazy">`:`<i>${esc(initials(ex.n))}</i>`}</span>`;}
 
+window.blockThumb=thumbHTML;
+
 /* ----- what a row says: 3x · reps per set · load ----- */
 function planOf(prog,key,x,ex){
   const sp=x.sp,P=parse(sp.s),k=logKey(prog,key,x.idx),D=densOf(x.item,k),u=unitOf(sp);
