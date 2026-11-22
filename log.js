@@ -307,7 +307,7 @@ function wire(){
     const cc={prog:LG.prog,sessKey:LG.key,idx:x.idx,sp:x.sp,item:x.item};
     wireRows(LG,x,c,render);
     c.querySelectorAll('[data-a]').forEach(b=>{const a=b.dataset.a;if(b.tagName==='INPUT')return;
-      if(a==='info')b.onclick=()=>openSheet(ex,cc);
+      if(a==='info')b.onclick=()=>window.exOpen?exOpen(ex):openSheet(ex,cc);
       else if(a.startsWith('p:'))b.onclick=()=>{openSheet(ex,cc);SHP=a.slice(2);renderSheet();};
       else if(a==='swap')b.onclick=()=>{openSheet(ex,cc);swapMode=true;renderSheet();};
       else if(a==='skip')b.onclick=()=>{if(e.skip){e.skip=false;e.done=false;settle(LG,x);}else{e.skip=true;e.done=true;}save();render();};
@@ -322,7 +322,28 @@ function saveScore(x,k,e,ex,c){const inp=c.querySelector('[data-a=score]'),v=par
   if(!(v>0)){if(inp)inp.focus();return;}const D=densOf(x.item,k);
   S.score[k]=[...(S.score[k]||[]),v];e.done=true;e.sets=1;recordSet(LG.prog,LG.key,x.idx,ex,{score:v,unit:D.score},LG.sid);
   restOff();save();render();}
-function finish(){const p=LG.prog,k=LG.key,from=LG.from;restOff();
+/* sets planned but not logged: offer to log them as planned, or leave them */
+function missing(){const out=[];
+  LG.B.blocks.forEach(b=>b.items.forEach(x=>{const k=logKey(LG.prog,LG.key,x.idx),e=entry(LG.prog,LG.key,x.idx),P=parse(x.sp.s);
+    if(e.skip||densOf(x.item,k)||!(P.sets>0))return;
+    const done=new Set(recsOf(LG,x).filter(r=>!r.check&&!r.warm&&r.score==null).map(r=>r.set));
+    const n=Math.max(0,P.sets+(LG.extra[x.idx]||0));
+    for(let i=1;i<=n;i++)if(!done.has(i))out.push({x,n:i});}));
+  return out;}
+function finish(){
+  const miss=missing();
+  if(!miss.length)return finishNow();
+  const d=document.createElement('div');d.className='lgdlg';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');
+  d.innerHTML=`<div><h3>${miss.length} set${miss.length===1?' is':'s are'} not logged</h3><p>Log them as planned, or finish with what you logged.</p>
+    <button class="go" data-d="all">Log them as planned</button><button data-d="leave">Finish without them</button><button data-d="x">Keep training</button></div>`;
+  document.body.append(d);
+  d.onclick=ev=>{const a=ev.target.dataset&&ev.target.dataset.d;if(!a&&ev.target!==d)return;d.remove();
+    if(a==='all'){miss.forEach(({x,n})=>{const k=logKey(LG.prog,LG.key,x.idx),ex=exFor(x.item,k),dd=defaultsFor(LG.prog,LG.key,x,n,LG.sid);
+        const kg=LG.v[x.idx+'|'+n+'|kg']??dd.kg,reps=LG.v[x.idx+'|'+n+'|reps']??dd.reps;
+        recordSet(LG.prog,LG.key,x.idx,ex,{set:n,kg,reps},LG.sid);settle(LG,x);});save();finishNow();}
+    else if(a==='leave')finishNow();};
+}
+function finishNow(){const p=LG.prog,k=LG.key,from=LG.from;restOff();
   playOpen(p,k,from,true);plFinishView();
   const keep=document.getElementById('plKeep');
   if(keep){const o=keep.onclick;keep.onclick=()=>{o();if(PL&&PL.clk)clkPause(PL.clk);PL=null;logOpen(p,k,from);};}}
@@ -354,7 +375,7 @@ renderSheet=function(){_renderSheet();
   const chip=(a,label,on)=>`<button data-a="${a}" class="${on?'on':''}">${label}</button>`;
   let h=`<div class="lgchips">`
     +(item.id?chip('p:eq',`${esc(eqName||'Equipment')}<i>▾</i>`,SHP==='eq')+chip('swap','Swap'):'')
-    +chip('p:history','History',SHP==='history')+chip('p:notes','Notes',SHP==='notes')
+    +chip('page','Stats & records')+chip('p:history','History',SHP==='history')+chip('p:notes','Notes',SHP==='notes')
     +chip('p:rest',`Rest ${S.rest<120?S.rest+' s':S.rest/60+' min'}`,SHP==='rest')
     +(nx?chip('ssnext','Next · '+esc(exFor(nx.item,logKey(prog,sessKey,nx.idx)).n))+chip('ssout','Leave superset'):(nextX&&noGrp?chip('ssin','Superset with next'):''))
     +(P.sets>0?chip('broke',e.broke?'Form broke ✓':'Form broke',e.broke):'')
@@ -388,6 +409,7 @@ renderSheet=function(){_renderSheet();
     else if(a==='skip'){if(e.skip){e.skip=false;e.done=false;settle(C,x);}else{e.skip=true;e.done=true;}save();}
     else if(a==='ssin'){const m=ssOf(prog,sessKey),g=m[idx]||m[nextX.idx]||uid();m[idx]=g;m[nextX.idx]=g;save();}
     else if(a==='ssout'){const m=ssOf(prog,sessKey),g=m[idx];delete m[idx];const left=Object.keys(m).filter(i=>m[i]===g);if(left.length<2)left.forEach(i=>delete m[i]);save();}
+    else if(a==='page'){const e2=ctx.ex;closeSheet();if(window.exOpen)exOpen(e2);return;}
     else if(a==='unadd'){addonToggle(prog,sessKey,item.id);closeSheet();return;}
     else if(a==='ssnext'){openSheet(exFor(nx.item,logKey(prog,sessKey,nx.idx)),{prog,sessKey,idx:nx.idx,sp:nx.sp,item:nx.item});return;}
     renderSheet();});
