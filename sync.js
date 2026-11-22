@@ -58,7 +58,7 @@ if(typeof module!=='undefined'&&module.exports){module.exports={merge,canon,setI
 const SB_URL='https://uuskbrhvpjybsmjpcokm.supabase.co';
 const SB_KEY='sb_publishable_lWkdNEE_j38zAzBxidguDQ_W8VRzUZk';  // publishable: safe in the page, RLS guards the data
 const AUTH_KEY='block.sync.auth',META_KEY='block.sync.meta';
-const BUSY=['session','play','build'];   // never swap data under an open workout
+const BUSY=['session','play','build','log'];   // never swap data under an open workout
 
 const rd=k=>{try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}};
 const wr=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
