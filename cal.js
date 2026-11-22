@@ -38,8 +38,21 @@ function queueOf(c){
   for(const k of keysOf(P)){if(out.length>=QMAX)break;if(c.skip&&c.skip[k])continue;
     let s;try{s=sessionOf(P.id,k);}catch(e){continue;}
     if(/^rest\b/i.test(s.title||'')||!realItems(s.items).length||sessDone(P.id,k))continue;
-    out.push({k,t:s.title,e:s.eyebrow});}
+    out.push({k,t:s.title,e:s.eyebrow,d:detailOf(P.id,k,s.items)});}
   return out;
+}
+/* plain-text overview for the calendar event: exercise · sets × reps · load */
+function detailOf(prog,key,items){
+  const L=[];
+  for(const{item,idx,sp}of items){
+    if(item.grp){if(L.length)L.push('');L.push(item.grp.toUpperCase());continue;}
+    const k=logKey(prog,key,idx),ex=exFor(item,k),D=densOf(item,k),bits=[];
+    if(D)bits.push(D.clock?`${D.clock} min`:'for time');
+    else if(sp&&sp.s)bits.push(parse(sp.s).label.replace(/^1 sets\b/,'1 set'));
+    if(!D&&sp&&sp.p!=null){const kg=loadFor(ex.key,sp.p);bits.push(kg?`${kg} kg`:`${sp.p} %`);}
+    if(sp&&sp.nt&&sp.nt.length<=40)bits.push(sp.nt);
+    L.push(`• ${ex.n}${bits.length?' — '+bits.join(' · '):''}`);}
+  return L.join('\n');
 }
 /* keep the queue, program name and last-trained time current on every save */
 function refresh(){

@@ -67,7 +67,7 @@ function ics(row, now) {
     L.push('BEGIN:VEVENT', `UID:block-${c.prog}-${x.k}@block.app`, `DTSTAMP:${stamp(now)}`,
       `DTSTART:${stamp(start)}`, `DTEND:${stamp(end)}`,
       `SUMMARY:${text(x.t)}`,
-      `DESCRIPTION:${text(`${x.e ? x.e + ' · ' : ''}${c.pn || ''}\n\nOpen BLOCK.: ${APP}\n\nSkip this session: ${skip}`)}`,
+      `DESCRIPTION:${text(`${x.e ? x.e + ' · ' : ''}${c.pn || ''}${x.d ? '\n\n' + x.d : ''}\n\nOpen BLOCK.: ${APP}\n\nSkip this session: ${skip}`)}`,
       `URL:${APP}`);
     if (c.alarm != null) L.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${text(x.t)}`, `TRIGGER:-PT${+c.alarm}M`, 'END:VALARM');
     L.push('END:VEVENT');
