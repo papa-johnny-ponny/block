@@ -89,6 +89,44 @@ const css=`
 .shrows{background:var(--surface);border-radius:16px;padding:2px 14px 0;margin-top:12px}
 .shrows .lgadd:first-child{border-top:0}
 .shhint{color:var(--accent-text);font-size:13px;margin:8px 0 0}
+/* thumbnails, exercise rows, add-ons */
+.th{flex:none;border-radius:12px;overflow:hidden;background:#1d1d20;display:grid;place-items:center;border:1px solid var(--line)}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th i{font-style:normal;font-weight:800;color:var(--dim-2);font-size:13px;letter-spacing:.04em}
+.xblk{margin:28px 0 2px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.xblk h3{margin:0;font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:-.005em}
+.xr{display:flex;align-items:center;gap:14px;width:100%;padding:12px 0;text-align:left;border-radius:12px}
+.xr:active{opacity:.7}
+.xm{flex:1;min-width:0}
+.xm b{display:block;font-size:16px;font-weight:700;line-height:1.25}
+.xm b em{font-style:normal;color:var(--accent);margin-right:5px}
+.xl{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:6px;color:var(--dim);font-size:14px}
+.xeq{display:inline-flex;align-items:center;gap:4px;background:var(--surface-2);border-radius:8px;padding:4px 8px;font-size:13px;color:#ddd}
+.xm small{display:block;color:var(--dim-2);font-size:12px;margin-top:4px}
+.xr.done .xm b{color:var(--dim)}
+.xr .prog{flex:none;color:var(--dim);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.xr.done .prog{color:var(--accent)}
+.xedit{display:flex;align-items:center;gap:8px}
+.xedit .xr{flex:1}
+.xedit .ord{display:flex;gap:6px}
+.xedit .ord button{width:36px;height:36px;border-radius:50%;background:var(--surface-2)}
+.xedit .ord button[disabled]{opacity:.3}
+#sessCards .ssw.on{padding-left:14px}
+.adc{background:var(--surface);border-radius:16px;padding:14px 16px 6px;margin:20px 0 10px}
+.adc h4{margin:0 0 4px;color:var(--dim);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
+.adc .xr{padding:10px 0}
+.adc .xr+.xr{border-top:1px solid var(--line);border-radius:0}
+.adb{flex:none;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;background:var(--accent);color:#000}
+.adb.on{background:var(--surface-2);color:var(--dim)}
+.sitem.open{background:var(--surface);border-radius:18px;border-bottom:0;margin:10px -14px;padding:0 14px}
+.sitem.open .slist{padding-top:16px}
+.sitem.open .slist .t{font-size:20px;font-weight:800;letter-spacing:-.01em}
+.sitem.open .sdet{padding:0 0 16px}
+.sdet .xr{padding:9px 0}
+.sdet .xr+.xr{border-top:1px solid var(--line);border-radius:0}
+.sdet .adc{background:var(--surface-2);margin:14px 0 4px}
+.sdet .acts{margin:16px 0 0}
+.lgh .th{margin-right:2px}
 .lgr .rpe{display:block;color:var(--dim-2);font-size:10px;font-weight:600;text-align:right;padding-right:8px;margin-top:-6px}`;
 document.head.insertAdjacentHTML('beforeend',`<style id="lgcss">${css}</style>`);
 
@@ -194,6 +232,7 @@ function pct(){const all=LG.B.blocks.flatMap(b=>b.items);
   return all.length?Math.round(all.filter(x=>entry(LG.prog,LG.key,x.idx).done).length/all.length*100):0;}
 function render(){
   if(!LG)return;
+  LG.B=blocksOf(LG.prog,LG.key);
   const multi=LG.B.blocks.length>1;
   let h=`<div class="lgtop"><button class="pbtn" id="lgX" aria-label="Close session">×</button>
     <div class="lgtt"><b>${esc(LG.B.title)}</b><span id="lgTime"></span></div>
@@ -206,8 +245,8 @@ function render(){
       ${timed?`<button class="btn-s" data-timer="${bi}">Start timer</button>`:''}</div>`;
     b.items.forEach(x=>{h+=card(x);});
   });
-  h+=summary()+`<button class="pgo" style="width:100%" id="lgDone">Finish workout</button>`;
-  view.innerHTML=h;wire();onTick();
+  h+=addonsHTML(LG.prog,LG.key,'Add to this session')+summary()+`<button class="pgo" style="width:100%" id="lgDone">Finish workout</button>`;
+  view.innerHTML=h;wire();wireAddons(view,LG.prog,LG.key,render);onTick();
 }
 function chipsHTML(x,e,eqName){
   return `<div class="lgchips">${x.item.id?`<button data-a="p:eq">${esc(eqName||'Equipment')}<i>▾</i></button><button data-a="swap">Swap</button>`:''}
@@ -218,7 +257,7 @@ function card(x){
   const k=logKey(LG.prog,LG.key,x.idx),ex=exFor(x.item,k),e=entry(LG.prog,LG.key,x.idx),P=parse(x.sp.s),D=densOf(x.item,k);
   const meta=[D?(D.clock?`${D.clock} min · score in ${UNITS[D.score]}`:'For time'):P.label,x.sp.nt].filter(Boolean).join(' · ');
   const pl=prevLine(ex.key,LG.sid);
-  let h=`<section class="lgc ${e.skip?'skip':''}" data-idx="${x.idx}"><div class="lgh"><div><b>${esc(ex.n)}</b>
+  let h=`<section class="lgc ${e.skip?'skip':''}" data-idx="${x.idx}"><div class="lgh">${thumbHTML(ex,52)}<div><b>${esc(ex.n)}</b>
     ${meta?`<small>${esc(meta)}</small>`:''}${pl?`<small class="last">${esc(pl)}</small>`:''}</div>
     <button class="lgq" data-a="info" aria-label="About ${esc(ex.n)}: video and details">?</button></div>
     ${chipsHTML(x,e,x.item.id&&S.eq&&S.eq[x.item.id])}`;
@@ -310,6 +349,7 @@ renderSheet=function(){_renderSheet();
     +(densFn?chip('dens','Density'):'')
     +chip('skip',e.skip?'Skipped · undo':'Skip today',e.skip)
     +chip('p:video','Video link',SHP==='video')
+    +(item.addon?chip('unadd','Remove from session'):'')
     +(rm?chip('p:rm','Set 1RM',SHP==='rm'):'')+`</div>`;
   if(rm&&SHP!=='rm')h+=`<p class="shhint">No 1RM on file, so weights show as %. Tap Set 1RM.</p>`;
   if(SHP==='eq')h+=`<div class="shp"><h4>Equipment</h4><div class="chipset">${['',...EQUIP].map(v=>`<button data-eq="${v}" class="${(eqName||'')===v?'on':''}">${v||'As written'}</button>`).join('')}</div></div>`;
@@ -336,6 +376,7 @@ renderSheet=function(){_renderSheet();
     else if(a==='skip'){if(e.skip){e.skip=false;e.done=false;settle(C,x);}else{e.skip=true;e.done=true;}save();}
     else if(a==='ssin'){const m=ssOf(prog,sessKey),g=m[idx]||m[nextX.idx]||uid();m[idx]=g;m[nextX.idx]=g;save();}
     else if(a==='ssout'){const m=ssOf(prog,sessKey),g=m[idx];delete m[idx];const left=Object.keys(m).filter(i=>m[i]===g);if(left.length<2)left.forEach(i=>delete m[i]);save();}
+    else if(a==='unadd'){addonToggle(prog,sessKey,item.id);closeSheet();return;}
     else if(a==='ssnext'){openSheet(exFor(nx.item,logKey(prog,sessKey,nx.idx)),{prog,sessKey,idx:nx.idx,sp:nx.sp,item:nx.item});return;}
     renderSheet();});
   wrap.querySelectorAll('[data-eq]').forEach(b=>b.onclick=()=>{const v=b.dataset.eq;if(v)S.eq[item.id]=v;else delete S.eq[item.id];save();ctx.ex=exFor(item,k);renderSheet();});
@@ -371,6 +412,106 @@ function onTick(){
   if(el)el.textContent=`${fmtT((Date.now()-LG.start)/1000)} · ${pct()}%`;
 }
 setInterval(onTick,500);
+
+/* ----- thumbnails ----- */
+function thumbOf(ex){const u=(S.video||{})[ex.key]||ex.v||(EX[ex.key]||{}).v,id=u?ytId(u):null;
+  return id?`https://i.ytimg.com/vi/${id}/mqdefault.jpg`:null;}
+const initials=n=>String(n||'').replace(/\(.*?\)/g,'').split(/[\s·-]+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+function thumbHTML(ex,size){const t=thumbOf(ex);
+  return `<span class="th" style="width:${size}px;height:${size}px" aria-hidden="true">${t?`<img src="${t}" alt="" loading="lazy">`:`<i>${esc(initials(ex.n))}</i>`}</span>`;}
+
+/* ----- what a row says: 3x · reps per set · load ----- */
+function planOf(prog,key,x,ex){
+  const sp=x.sp,P=parse(sp.s),k=logKey(prog,key,x.idx),D=densOf(x.item,k),u=unitOf(sp);
+  if(D)return{n:null,t:D.clock?`${D.clock} min · score in ${UNITS[D.score]}`:'For time'};
+  let t;
+  if(sp.ps)t='Reps '+sp.ps.map(z=>z.r).join(', ');
+  else if(P.wave)t='Reps '+Array.from({length:P.sets},(_,i)=>P.wave[i%P.wave.length]).join(', ');
+  else if(P.reps&&P.sets>1&&P.sets<=6)t=(u==='s'?'Seconds ':u==='m'?'Meters ':'Reps ')+Array(P.sets).fill(P.reps).join(', ');
+  else if(P.reps)t=`${P.reps} ${u}`;
+  else if(P.sets>0)t=P.label.replace(/^\S+ sets? × /,'');
+  else t=P.label;
+  if(sp.p!=null){const l=loadFor(ex.key,sp.p);t+=' · '+(l?`${sp.ps?'top ':''}${l} kg`:`${sp.p} %`);}
+  return{n:P.sets>0?P.sets:null,t};
+}
+function guessEq(ex){const q=S.eq&&S.eq[ex.key.replace(/^x:/,'')];if(q)return q;
+  const n=ex.n.toLowerCase(),c=(EX[ex.key]||{}).c;
+  const hit=[['barbell','Barbell'],['dumbbell','Dumbbell'],[' db ','Dumbbell'],['kettlebell','Kettlebell'],['kb ','Kettlebell'],['cable','Cable'],['band','Band'],['ring','Rings'],['sandbag','Sandbag'],['landmine','Landmine'],['machine','Machine'],['plate','Plate'],['rope','Rope']]
+    .find(([w])=>(' '+n+' ').includes(w));
+  if(hit)return hit[1];
+  if(c==='bodyweight'||c==='skill'||c==='animal'||c==='plyo')return 'Bodyweight';
+  return /deadlift|squat|bench|press|row|clean/.test(n)?'Barbell':'Equipment';
+}
+function exRowHTML(prog,key,x,size,withEq,right){
+  const k=logKey(prog,key,x.idx),ex=exFor(x.item,k),pl=planOf(prog,key,x,ex),e=entry(prog,key,x.idx);
+  const nt=[x.sp.nt,e.broke?'form broke':'',e.skip?'skipped today':''].filter(Boolean).join(' · ');
+  return `<span class="xr-in" style="display:contents">${thumbHTML(ex,size)}<span class="xm"><b>${pl.n?`<em>${pl.n}x</em>`:''}${esc(ex.n)}</b>
+    <span class="xl">${withEq&&x.item.id?`<span class="xeq" data-eq="1">${esc(guessEq({...ex,key:x.item.id}))} ⇅</span>`:''}<span>${esc(pl.t)}</span></span>
+    ${nt?`<small>${esc(nt)}</small>`:''}</span>${right||''}</span>`;
+}
+
+/* ----- add-ons: grip pairings you can add before or during a session ----- */
+const GRIP_IDS=['thick_farmers','hammer_supro','towel_biceps'];
+const _sessionOfA=sessionOf;
+sessionOf=function(prog,key){const r=_sessionOfA(prog,key),a=S.addon&&S.addon[prog+'|'+key];
+  if(a)Object.keys(a).forEach(id=>{const o=a[id];if(!EX[id])return;
+    r.items.push({item:{id,s:o.s,nt:o.nt,addon:1},idx:o.idx,sp:{s:o.s,nt:o.nt,confirmed:true}});});
+  return r;};
+function addonToggle(prog,key,id,scheme){const sk=prog+'|'+key;S.addon=S.addon||{};const a=S.addon[sk]=S.addon[sk]||{};
+  if(a[id]){delete a[id];if(!Object.keys(a).length)delete S.addon[sk];}
+  else{const g=GRIP_IDS.indexOf(id);a[id]={idx:g>=0?900+g:950+Object.keys(a).length,s:scheme,nt:/\d\s*s$/.test(scheme)?'grip · seconds':'grip pairing'};}
+  save();}
+function tipsFor(prog,key){if(prog==='nogi')return[];
+  let items;try{items=realItems(sessionOf(prog,key).items);}catch(e){return[];}
+  const added=(S.addon&&S.addon[prog+'|'+key])||{};
+  const tips=gripTips(items.filter(x=>!x.item.addon).map(x=>x.item.id));
+  Object.keys(added).forEach(id=>{if(!tips.some(t=>t[0]===id))tips.push([id,added[id].s,'added']);});
+  return tips.filter(t=>EX[t[0]]).map(t=>({id:t[0],s:t[1],why:t[2],on:!!added[t[0]]}));}
+function addonsHTML(prog,key,title){const tips=tipsFor(prog,key);if(!tips.length)return'';
+  return `<div class="adc"><h4>${esc(title||'Grip pairing')}</h4>${tips.map(t=>{const ex=exOf({id:t.id});
+    return `<div class="xr">${thumbHTML(ex,44)}<span class="xm"><b>${esc(ex.n)}</b><span class="xl"><span>${esc(t.s)}${t.why!=='added'?' · '+esc(t.why):''}</span></span></span>
+      <button class="adb ${t.on?'on':''}" data-add="${t.id}" data-s="${esc(t.s)}" aria-pressed="${t.on}">${t.on?'Added ✓':'+ Add'}</button></div>`;}).join('')}</div>`;}
+function wireAddons(root,prog,key,redraw){
+  root.querySelectorAll('[data-add]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();addonToggle(prog,key,b.dataset.add,b.dataset.s);redraw();});}
+
+/* ----- session page: rows with thumbnails, block headings, 3x and reps ----- */
+paintItems=function(box,prog,sessKey,items){
+  box.innerHTML='';
+  const sk=`${prog}|${sessKey}`,ss=S.ss[sk]||{},real=items.filter(x=>!x.item.grp),edit=EDIT===sk;
+  items.forEach(x=>{const {item,idx,sp}=x;
+    if(item.grp){const h=document.createElement('div');h.className='xblk';h.innerHTML=`<h3>${esc(item.grp)}</h3>`;box.appendChild(h);return;}
+    const k=logKey(prog,sessKey,idx),ex=exFor(item,k),P=parse(sp.s),e=entry(prog,sessKey,idx);
+    const ri=real.indexOf(x),g=ss[idx],pg=ri>0?ss[real[ri-1].idx]:null,ng=ri<real.length-1?ss[real[ri+1].idx]:null;
+    const w=document.createElement('div');w.className='ssw'+(g?' on':'')+(g&&pg===g?' mid':'')+(g&&ng===g?' cont':'');
+    if(g&&pg!==g)w.innerHTML='<p class="sslab">Superset</p>';
+    const right=`<span class="prog">${e.done?'✓':(P.sets>0&&e.sets?`${Math.min(e.sets,P.sets)}/${P.sets}`:'')}</span>`;
+    if(edit){const c=document.createElement('div');c.className='xedit';
+      c.innerHTML=`<div class="xr">${exRowHTML(prog,sessKey,x,60,true,'')}</div><span class="ord"><button data-d="-1" ${ri===0?'disabled':''} aria-label="Move up">↑</button>
+        <button data-d="1" ${ri===real.length-1?'disabled':''} aria-label="Move down">↓</button></span>`;
+      c.querySelectorAll('.ord button').forEach(b=>b.onclick=()=>{const o=real.map(r=>r.idx),j=ri+ +b.dataset.d;
+        [o[ri],o[j]]=[o[j],o[ri]];S.order[sk]=o;save();renderSession();});
+      w.appendChild(c);}
+    else{const b=document.createElement('button');b.className='xr'+(e.done?' done':'');b.innerHTML=exRowHTML(prog,sessKey,x,60,true,right);
+      b.onclick=ev=>{openSheet(ex,{prog,sessKey,idx,sp,item});if(ev.target.closest('[data-eq]')){SHP='eq';renderSheet();}};w.appendChild(b);}
+    box.appendChild(w);
+  });
+  if(!edit){const d=document.createElement('div');d.innerHTML=addonsHTML(prog,sessKey);
+    if(d.firstChild){box.appendChild(d.firstChild);wireAddons(box,prog,sessKey,()=>{
+      if(!document.getElementById('v-session').classList.contains('hide'))renderSession();else paintItems(box,prog,sessKey,sessionOf(prog,sessKey).items);});}}
+};
+
+/* ----- program overview: an open session lists its exercises the same way ----- */
+slDetail=function(P,d){
+  const items=sessionOf(P.id,d.key).items;let h='';
+  for(const x of items){
+    if(x.item.grp){h+=`<p class="sgh" style="margin:14px 0 2px">${esc(x.item.grp)}</p>`;continue;}
+    h+=`<div class="xr">${exRowHTML(P.id,d.key,x,44,false,'')}</div>`;}
+  return h+addonsHTML(P.id,d.key,'Grip pairing · add if you want')
+    +`<div class="acts"><button class="btn-s on" data-go="start">Start session</button><button class="btn-s" data-go="open">Details</button></div>`;
+};
+const _slSet=slSet;
+slSet=function(P,d,w,open){_slSet(P,d,w,open);const panel=w.querySelector('.sdet');
+  if(open&&panel)wireAddons(panel,P.id,d.key,()=>{panel.innerHTML='';slSet(P,d,w,true);});};
 
 /* ----- wiring into the app ----- */
 const _show=show;
