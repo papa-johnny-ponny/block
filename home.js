@@ -62,15 +62,17 @@ const css=`
 
 /* programs and links: list rows */
 .hlist{margin:0}
-.hrowp{display:flex;align-items:center;gap:14px;width:100%;padding:15px 2px;border-top:1px solid var(--line);text-align:left}
-.hrowp:last-child{border-bottom:1px solid var(--line)}
+.hrowp small{white-space:normal}
+.hrowp{display:flex;align-items:flex-start;gap:12px;width:100%;padding:16px;margin:0 0 10px;background:var(--surface);border-radius:18px;text-align:left}
+.hrowp:active,.hcur:active{background:var(--surface-2)}
+.hrowp .ey,.hcur .ey{display:block;font-style:normal;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim-2);margin-bottom:6px}
+.hcur .ey{color:var(--accent)}
 .hrowp>span:first-child{flex:1;min-width:0}
-.hrowp b{display:block;font-size:17px;font-weight:700;letter-spacing:-.01em}
-.hrowp small{display:block;color:var(--dim);font-size:13px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hrowp .n{flex:none;color:var(--dim);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
-.hrowp .chev{flex:none;color:var(--dim-2);font-size:20px}
-.hcur{background:var(--surface);border-radius:18px;padding:16px 16px 14px;margin:0 0 6px;width:100%;text-align:left;display:block}
-.hcur .tagc{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.hrowp b{display:block;font-size:18px;font-weight:700;letter-spacing:-.01em}
+.hrowp small{display:block;color:var(--dim);font-size:13px;margin-top:3px}
+.hrowp .n{flex:none;color:var(--dim);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px}
+.hrowp .chev{flex:none;color:var(--dim-2);font-size:20px;line-height:1;margin-top:-2px}
+.hcur{background:var(--surface);border-radius:18px;padding:16px;margin:0 0 10px;width:100%;text-align:left;display:block;box-shadow:inset 0 0 0 1.5px var(--accent-soft)}
 .hcur b{display:block;font-size:20px;font-weight:800;letter-spacing:-.015em}
 .hcur small{display:block;color:var(--dim);font-size:13px;margin-top:3px}
 .hcur .bar{height:4px;border-radius:999px;background:var(--surface-2);margin-top:12px;overflow:hidden}
@@ -142,9 +144,9 @@ renderHome=function(){_renderHome();
   const open=P=>{S.prog=P.id;progTab='sessions';save();show('program');renderProgram();};
   let h='';
   if(cur){const d=progDone(cur),t=progTotal(cur);
-    h+=`<button class="hcur" data-p="${cur.id}"><span class="tagc">Current program</span><b>${esc(cur.n)}</b><small>${esc(cur.sub)}</small>
+    h+=`<button class="hcur" data-p="${cur.id}"><em class="ey">Current program · ${t} sessions</em><b>${esc(cur.n)}</b><small>${esc(cur.sub)}</small>
       <div class="bar"><i style="width:${t?Math.round(d/t*100):0}%"></i></div><small>${d} of ${t} sessions done</small></button>`;}
-  h+=`<div class="hlist">${list.filter(P=>P!==cur).map(P=>`<button class="hrowp" data-p="${P.id}"><span><b>${esc(P.n)}</b><small>${esc(P.sub)}</small></span>
+  h+=`<div class="hlist">${list.filter(P=>P!==cur).map(P=>`<button class="hrowp" data-p="${P.id}"><span><em class="ey">${progTotal(P)} sessions</em><b>${esc(P.n)}</b><small>${esc(P.sub)}</small></span>
     <span class="n">${progDone(P)}/${progTotal(P)}</span><span class="chev">›</span></button>`).join('')}</div>`;
   box.innerHTML=h;
   box.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>open(progById(b.dataset.p)));
