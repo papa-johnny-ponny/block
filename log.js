@@ -118,8 +118,20 @@ const css=`
 .adc .xr+.xr{border-top:1px solid var(--line);border-radius:0}
 .adb{flex:none;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;background:var(--accent);color:#000}
 .adb.on{background:var(--surface-2);color:var(--dim)}
-.sitem.open{background:var(--surface);border-radius:18px;border-bottom:0;margin:10px -14px;padding:0 14px}
-.sitem.open .slist{padding-top:16px}
+.sitem{background:var(--surface);border-radius:18px;border-bottom:0;margin:0 0 10px;padding:0 16px}
+.sitem .slist{padding:16px 0;align-items:flex-start}
+.sitem .slist .l{gap:4px}
+.sitem .slist .t{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.sitem .slist .sm{color:var(--dim);font-size:13px}
+.sitem .slist .sn{color:var(--dim-2);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sitem.open .slist .sn{display:none}
+.sitem .slist .r{align-self:flex-start;font-size:12px;font-weight:600;color:var(--dim)}
+.sitem .slist .r.on{color:var(--accent-text)}
+.sitem .slist.done .t{color:var(--dim)}
+.sitem .slist.done .r{color:var(--accent)}
+#sessionList .grp{margin:26px 2px 10px}
+#sessionList .sltools+.grp{margin-top:10px}
+.sitem.open .slist{padding-bottom:6px}
 .sitem.open .slist .t{font-size:20px;font-weight:800;letter-spacing:-.01em}
 .sitem.open .sdet{padding:0 0 16px}
 .sdet .xr{padding:9px 0}
@@ -512,6 +524,16 @@ slDetail=function(P,d){
 const _slSet=slSet;
 slSet=function(P,d,w,open){_slSet(P,d,w,open);const panel=w.querySelector('.sdet');
   if(open&&panel)wireAddons(panel,P.id,d.key,()=>{panel.innerHTML='';slSet(P,d,w,true);});};
+
+/* collapsed sessions: how many exercises and roughly how long */
+const _rslC=renderSessionList;
+renderSessionList=function(P){_rslC(P);
+  const items=[...document.querySelectorAll('#sessionList .sitem')];
+  (P.days||[]).forEach((d,i)=>{const it=items[i];if(!it)return;const l=it.querySelector('.slist .l');if(!l||l.querySelector('.sm'))return;
+    let n=0,m=null,names='';try{const r=realItems(sessionOf(P.id,d.key).items);n=r.length;m=estMinutes(P.id,d.key);
+      names=r.map(x=>exFor(x.item,logKey(P.id,d.key,x.idx)).n).join(' · ');}catch(e){}
+    const done=sessDone(P.id,d.key),cnt=sessCount(P.id,d.key);
+    l.insertAdjacentHTML('beforeend',`<span class="sm">${n} exercise${n===1?'':'s'}${m?` · ~${m} min`:''}${!done&&cnt?` · ${cnt} of ${n} logged`:''}</span>${names?`<span class="sn">${esc(names)}</span>`:''}`);});};
 
 /* ----- wiring into the app ----- */
 const _show=show;
