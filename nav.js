@@ -13,7 +13,8 @@ const st=document.createElement('style');st.textContent=`
 .eyebrow{font-size:14px}
 .info h4,.xsec h4,.exsec>h4,.shp h4,.adc h4,.lgsum h4{font-size:13px}
 .slist .e,.sgh,.hrowp .ey,.hcur .ey{font-size:12px}
-.wrap{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}`;
+.wrap{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
+header>.wrap,header .wrap{padding-bottom:0}`;
 document.head.appendChild(st);
 const BACK={program:'pBack',session:'sessBack',library:'lBack',settings:'setBack',build:'bdBack',ex:'exBack',log:'lgX',gen:'genBack'};
 const stack=[{v:'home',y:0}];
