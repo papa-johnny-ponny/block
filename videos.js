@@ -361,7 +361,18 @@ const V={"deadlift":"XxWcirHIwVo",
 "x:Leg Raise":"Zr-PtqcpeWM",
 "x:100X Air Squats":"zhGVm7IBPuY",
 "dbbulgarian":"hiLF_pF3EJM",
-"hk_landmine_rot":"MswsBPLGhE8"};
+"hk_landmine_rot":"MswsBPLGhE8",
+"cd_incline_bench":"_aJHyS_JAaY",
+"cd_lat_pulldown":"CAwf7n6Luuc",
+"cd_tri_pushdown":"_w-HpW70nSQ",
+"cd_db_press":"qEwKCR5JCog",
+"cd_hammer_curl":"zC3nLlEvin4",
+"cd_calf_raise":"ndQc4mz4mBU",
+"cd_tib_raise":"lBCRdjdWiTI",
+"cd_walking_lunge":"YYWhkctnP2o",
+"cd_diamond_pushup":"_4EGPVJuqfA",
+"cd_situp":"pCX65Mtc_Kk",
+"cd_russian_twist":"nhFynCkYtD4"};
 const url=id=>'https://www.youtube.com/watch?v='+id;
 Object.keys(V).forEach(k=>{if(EX[k]&&!EX[k].v)EX[k].v=url(V[k]);});
 const _exOf=exOf;

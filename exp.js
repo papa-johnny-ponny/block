@@ -74,7 +74,7 @@ document.head.insertAdjacentHTML('beforeend',`<style id="excss">${css}</style>`)
 
 const view=document.createElement('div');view.id='v-ex';view.className='wrap hide';
 (document.getElementById('v-log')||document.getElementById('v-play')).after(view);
-const VIEWS=['home','program','session','library','settings','log'];
+const VIEWS=['home','program','session','library','settings','log','build','gen'];
 const visibleView=()=>VIEWS.find(v=>{const el=document.getElementById('v-'+v);return el&&!el.classList.contains('hide');})||'home';
 let X=null;   // {ex, tab, from, rec:'w'|'r', per}
 

@@ -9,7 +9,7 @@ const st=document.createElement('style');st.textContent=`
 .slist .e,.sgh,.hrowp .ey,.hcur .ey{font-size:12px}
 .wrap{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}`;
 document.head.appendChild(st);
-const BACK={program:'pBack',session:'sessBack',library:'lBack',settings:'setBack',build:'bdBack',ex:'exBack',log:'lgX'};
+const BACK={program:'pBack',session:'sessBack',library:'lBack',settings:'setBack',build:'bdBack',ex:'exBack',log:'lgX',gen:'genBack'};
 const stack=[{v:'home',y:0}];
 const top=()=>stack[stack.length-1];
 

@@ -155,6 +155,7 @@ const pat2=n=>{n=(n||'').toLowerCase();for(const[p,re]of PAT2)if(re.test(n))retu
 const plane=n=>{n=(n||'').toLowerCase();for(const[p,re]of PLANE)if(re.test(n))return p;return'Sagittal';};
 let LOADX=false,LOADPG=0;
 window.BLOCK_PATTERNS=PAT_ORDER.slice(0,10);
+window.blockPat=pat2;window.blockPlane=plane;
 function loadHTML(recs){
   const work=recs.filter(r=>r.score==null&&!r.warm&&!r.check);
   const group=(fn,order,keep)=>{const g={};order.forEach(k=>g[k]={n:0,ex:{}});
