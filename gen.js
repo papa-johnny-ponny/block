@@ -559,7 +559,7 @@ renderHome=function(){syncProgs();_renderHome();
 /* programs grouped by creator, collapsed, with a type filter on top */
 const OWN=()=>window.BLOCK_OWN_GROUP||'Your own builds';
 const LSG='block-open-groups';let PFILT='';
-const openSet=()=>{try{return new Set(JSON.parse(localStorage.getItem(LSG)||'null')||[OWN()]);}catch(e){return new Set([OWN()]);}};
+const openSet=()=>{try{const s=new Set(JSON.parse(localStorage.getItem(LSG)||'null')||[OWN()]);if(s.delete('Your own builds'))s.add(OWN());return s;}catch(e){return new Set([OWN()]);}};
 const keepOpen=s=>{try{localStorage.setItem(LSG,JSON.stringify([...s]));}catch(e){}};
 const rowHTML=(P,ey)=>`<button class="hrowp" data-p="${P.id}"><span><em class="ey">${esc(ey||`${progTotal(P)} sessions`)}</em><b>${esc(P.n)}</b><small>${esc(P.sub)}</small></span>
   <span class="n">${progDone(P)}/${progTotal(P)}</span><span class="chev">›</span></button>`;

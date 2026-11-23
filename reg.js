@@ -26,10 +26,10 @@ window.BLOCK_REG={
   group(name,meta){BLOCK_GROUPS[name]=Object.assign(BLOCK_GROUPS[name]||{},meta||{});}
 };
 /* creators of the programs that were already in the app */
-const OWN='Your own builds';
-const G={dense12:'Anthony Gusmao',density:'Steven McCoyne',sandbag:'Gym Free',fiveweek:'FORGE',ssforge:'FORGE',
-  bbw:'FitnessFAQs',hspro:'FitnessFAQs',nogi:'Nogi Gorilla',built26:'Built Project',cd_ul:'Chris Detmering',cd_ppl:'Chris Detmering',cd_bwdb:'Chris Detmering',
-  week:OWN,tpp:OWN,chopcarry:OWN,shredfast:OWN,custom:OWN};
+const OWN='John Stolpe';
+const G={dense12:'Anthony Gusmao',density:'Steven McCoyne',sandbag:'Gym Free',fiveweek:'Josef Eriksson',ssforge:'FORGE',
+  bbw:'FitnessFAQs',hspro:'FitnessFAQs',nogi:'Nogi Gorilla',built26:'Josef Eriksson',cd_ul:'Chris Detmering',cd_ppl:'Chris Detmering',cd_bwdb:'Chris Detmering',
+  week:OWN,tpp:OWN,chopcarry:OWN,shredfast:'Luke Powell',custom:OWN};
 PROGRAMS.forEach(P=>{if(!P.group)P.group=G[P.id]||(P.by)||'Other';});
 window.BLOCK_OWN_GROUP=OWN;
 })();
