@@ -13,7 +13,7 @@ window.BLOCK_APPROACHES=window.BLOCK_APPROACHES||[];
 window.BLOCK_GROUPS=window.BLOCK_GROUPS||{};
 const warn=(...a)=>{try{console.warn('[BLOCK pack]',...a);}catch(e){}};
 window.BLOCK_REG={
-  ex(map){Object.keys(map||{}).forEach(k=>{if(!EX[k])EX[k]=map[k];});},
+  ex(map){Object.keys(map||{}).forEach(k=>{if(!EX[k])EX[k]=map[k];else Object.keys(map[k]||{}).forEach(f=>{if(EX[k][f]==null)EX[k][f]=map[k][f];});});},
   steps(map){Object.assign(window.BLOCK_STEPS_EXTRA,map||{});if(window.BLOCK_STEPS)Object.keys(map||{}).forEach(k=>{if(!BLOCK_STEPS[k])BLOCK_STEPS[k]=map[k];});},
   program(P,info){
     if(!P||!P.id||PROGRAMS.some(x=>x.id===P.id)){warn('skipped program',P&&P.id);return;}
