@@ -240,5 +240,6 @@ const ST={
 "cd_russian_twist":["Sit with your knees bent and lean back slightly with a straight back.","Hold a dumbbell or plate at your chest, feet on the floor or lifted.","Rotate your torso to one side and bring the weight beside your hip.","Turn to the other side, moving through your torso rather than swinging your arms."],
 "cd_hike":["Pick a route that takes one to two hours.","Walk at a pace where you can still hold a conversation.","Include hills if you can.","Bring water and enjoy being outside."]
 };
+Object.keys(window.BLOCK_STEPS_EXTRA||{}).forEach(k=>{if(!ST[k])ST[k]=BLOCK_STEPS_EXTRA[k];});
 window.BLOCK_STEPS=ST;
 })();

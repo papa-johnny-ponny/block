@@ -36,6 +36,8 @@ function clipDialog(url,id,after){
   const d=document.createElement('div');d.className='lgdlg clipdlg';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-labelledby','clipT');
   d.innerHTML=`<div><h3 id="clipT">${id?'Edit clip':'Save clip'}</h3><p>Name it and say what kind of exercise it is, so it shows up in the right place.</p>
     <label>Link<input id="clipU" inputmode="url" autocomplete="off" placeholder="https://www.instagram.com/reel/…" value="${esc(c.v||'')}"></label>
+    <label>Caption or notes <span style="font-weight:400">(optional)</span><textarea id="clipX" rows="2" style="display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:12px 14px;border-radius:12px;background:var(--surface-2);color:#fff;border:1px solid var(--line);font:inherit;font-size:16px" placeholder="Paste the post text, or describe the exercise">${esc(c.cap||'')}</textarea></label>
+    <button type="button" class="clipadd" id="clipAI" style="margin-top:10px;background:none;color:#fff;border:1px solid var(--line)">Fill in the rest for me</button>
     <label>Name<input id="clipN" autocomplete="off" placeholder="e.g. Copenhagen plank" value="${esc(c.n||'')}"></label>
     <label>Category<select id="clipC">${Object.keys(CAT).map(k=>`<option value="${k}" ${k===c.c?'selected':''}>${catName(k)}</option>`).join('')}</select></label>
     <div class="row"><label>Pattern<select id="clipP"><option value="">Not set</option>${pats().map(p=>`<option ${p===c.pat?'selected':''}>${p}</option>`).join('')}</select></label>
@@ -43,13 +45,33 @@ function clipDialog(url,id,after){
     <p class="err" id="clipE" role="alert"></p>
     <button class="go" data-d="save">Save clip</button>${id?'<button data-d="del">Remove clip</button>':''}<button data-d="x">Cancel</button></div>`;
   document.body.append(d);
-  const q=x=>d.querySelector('#'+x);setTimeout(()=>(q('clipU').value?q('clipN'):q('clipU')).focus(),50);
+  let aiSteps=null;
+  const q=x=>d.querySelector('#'+x);
+  q('clipAI').onclick=async()=>{const cap=q('clipX').value.trim(),link=linkIn(q('clipU').value),b=q('clipAI');
+    const A=window.blockAI;
+    const setv=(id,v)=>{const el=q(id);if(v&&[...(el.options||[{value:v}])].some(o=>o.value===v))el.value=v;};
+    if(!A||!A.ready()){const nm=(cap.split(/\n|[.!?]/)[0]||'').replace(/#\S+|@\S+/g,'').trim().slice(0,48);
+      if(nm&&!q('clipN').value)q('clipN').value=nm;
+      const pat=window.blockPat&&blockPat(q('clipN').value||cap);if(pat&&pat!=='Other')setv('clipP',pat);
+      const pl=window.blockPlane&&blockPlane(q('clipN').value||cap);if(pl)setv('clipL',pl);
+      q('clipE').textContent='Filled in from the text. Connect AI in Settings for better guesses and steps.';return;}
+    if(!cap&&!q('clipN').value){q('clipE').textContent='Paste the caption or write what the exercise is first.';q('clipX').focus();return;}
+    b.disabled=true;b.textContent='Thinking…';
+    try{const r=await A.ask({system:A.SYS+' Classify an exercise from a social media post. If the text does not say what the exercise is, make the best guess and keep the name generic.',
+        prompt:`Link: ${link||'(none)'}\nName so far: ${q('clipN').value||'(none)'}\nPost text / notes:\n${cap||'(none)'}\n\nGive a short exercise name (max 40 chars), its category, movement pattern, plane, and 3–5 short how-to steps.`,
+        schema:A.obj({name:A.str,category:{type:'string',enum:Object.keys(CAT)},pattern:{type:'string',enum:[...pats(),'']},plane:{type:'string',enum:PLANES},steps:A.arr(A.str)})});
+      if(r.name)q('clipN').value=r.name;setv('clipC',r.category);setv('clipP',r.pattern);setv('clipL',r.plane);
+      aiSteps=(r.steps||[]).slice(0,6);q('clipE').textContent=aiSteps.length?`Filled in, with ${aiSteps.length} steps for the exercise page.`:'Filled in.';}
+    catch(e){q('clipE').textContent=e.message;}
+    b.disabled=false;b.textContent='Fill in the rest for me';};
+  setTimeout(()=>(q('clipU').value?q('clipN'):q('clipU')).focus(),50);
   d.onclick=ev=>{const a=ev.target.dataset&&ev.target.dataset.d;if(!a&&ev.target!==d)return;
     if(a==='save'){const v=linkIn(q('clipU').value),n=q('clipN').value.trim();
       if(!v){q('clipE').textContent='Paste the link to the clip.';return;}
       if(!n){q('clipE').textContent='Give the clip a name.';q('clipN').focus();return;}
       const k=id||('ig_'+uid());
-      S.clips[k]={n,c:q('clipC').value,pat:q('clipP').value||null,pl:q('clipL').value,v,src:isIG(v)?'ig':'link',t:(c.t||Date.now())};
+      S.clips[k]={n,c:q('clipC').value,pat:q('clipP').value||null,pl:q('clipL').value,v,src:isIG(v)?'ig':'link',t:(c.t||Date.now()),
+        cap:q('clipX').value.trim()||null,st:aiSteps||c.st||null};
       EX[k]=S.clips[k];save();d.remove();after&&after(k);return;}
     if(a==='del'){delete S.clips[id];delete EX[id];save();d.remove();after&&after(null);return;}
     d.remove();};

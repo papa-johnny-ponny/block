@@ -44,6 +44,17 @@ const css=`
 .gmsg{color:var(--dim);font-size:13px;min-height:18px;margin:8px 0 0}
 .gsum{margin:18px 0 0;padding:14px 16px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);font-size:14px;line-height:1.5;color:var(--dim)}
 .gsum b{color:#fff}
+.pfilt{display:flex;gap:6px;overflow-x:auto;margin:0 -16px 12px;padding:0 16px 2px;scrollbar-width:none}
+.pfilt::-webkit-scrollbar{display:none}
+.pfilt button{flex:none;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--dim);font:inherit;font-size:13px;font-weight:600;white-space:nowrap}
+.pfilt button.on{background:#fff;color:#000;border-color:#fff}
+.pgrp{border-bottom:1px solid var(--line)}
+.pgh{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:16px 2px;background:none;border:0;color:#fff;font:inherit;text-align:left;cursor:pointer}
+.pgh b{display:block;font-size:18px}.pgh small{display:block;color:var(--dim);font-size:13px;margin-top:2px}
+.pgh .chev{transition:transform .2s;color:var(--dim)}
+.pgrp.on .pgh .chev{transform:rotate(90deg)}
+.pgrp .hlist{margin:0 0 14px}
+.pgb{color:var(--dim);font-size:13px;margin:-6px 2px 10px;line-height:1.45}
 .ptags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
 .ptag{display:inline-block;font-style:normal;font-size:11px;font-weight:600;line-height:1;padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--dim);letter-spacing:0;text-transform:none}
 .ptag.p{color:var(--accent);border-color:rgba(207,230,78,.45)}
@@ -64,8 +75,17 @@ const EFF=[['easy','Easy','RPE 6'],['mod','Moderate','RPE 7–8'],['hard','Hard'
 const FMT=[['straight','Straight sets','one exercise at a time'],['super','Supersets','pairs that don’t compete'],
   ['circuit','Circuit','rounds, short rest'],['amrap','AMRAP','rounds against the clock'],['emom','EMOM','a set every minute']];
 const AVOID=[['knee','Knees'],['back','Lower back'],['shoulder','Shoulders'],['wrist','Wrists']];
+/* approaches: a creator's way of training, applied only when picked (packs add more via BLOCK_REG.approach) */
+const BASE_APPR=[
+  {id:'greg_rpe',by:'Greg Nuckols',n:'Autoregulated by RPE',short:'Load set by how the last set felt; sets, then reps, then load.',gp:{rpe:8},prog:'setsreps',cues:['judge the last set'],details:'Targets are effort-based: the last set should land at the RPE given. Easier than that and the load goes up next time, harder and it comes down. Accessories climb in sets first, then reps, then load.'},
+  {id:'flo_move',by:'Flolyfe',n:'Movement-based circuits',short:'Two upper, two lower, one core, repeated. Push and pull days.',fmt:'circuit',details:'Pick movements by pattern (push, pull, lower, upper, core) and run them as a circuit when time is short. Goal sets the reps: power 1–6, strength 7–12, endurance 12–20. Finish with core intervals.'},
+  {id:'chris_cap',by:'Chris Detmering',n:'Time-capped, close to failure',short:'Supersets, little rest, last sets near failure, slow lowering.',gp:{rest:60,rpe:9},fmt:'super',cues:['slow lowering','last set near failure'],details:'Short sessions with a hard cap on time. Pair exercises, keep rest short and take the last sets close to failure. Pick movements that need little warm-up.'}];
+const APPR=()=>[...BASE_APPR,...(window.BLOCK_APPROACHES||[])];
+const apprOf=o=>o&&o.appr?APPR().find(a=>a.id===o.appr)||null:null;
+function gpOf(o){const g=GP[o.goal],A=apprOf(o);if(!A||!A.gp)return g;
+  const x={...g,...A.gp};['s','r'].forEach(k=>{if(!Array.isArray(x[k])||x[k].length<2)x[k]=g[k];});return x;}
 const EXTRA=[['warm','Warm-up'],['fin','Core finisher'],['fresh','Skip what I trained the last 2 days']];
-const DEF={time:30,focus:'full',eq:['db','kb','bar','band'],goal:'muscle',eff:'mod',fmt:'super',avoid:[],warm:true,fin:true,fresh:true,from:[]};
+const DEF={time:30,focus:'full',eq:['db','kb','bar','band'],goal:'muscle',eff:'mod',fmt:'super',avoid:[],warm:true,fin:true,fresh:true,from:[],appr:''};
 const PDEF={days:3,weeks:8,split:'auto',prog:'double',auto:'on',deload:4,name:''};
 const SPLIT=[['auto','Pick for me'],['full','Full body'],['ul','Upper / lower'],['fpp','Push / pull','Flolyfe, legs included'],['ppl','Push / pull / legs']];
 const PROG=[['double','Double progression','top of the range, then add load'],['setsreps','Sets, then reps','SBS: 3×8 up to 5×12, then add load'],
@@ -87,7 +107,7 @@ const HOLD=/plank|hold|hollow|l[- ]?sit|\biso\b|wall sit|copenhagen|hang\b/;
 const TECH=/get-?up|windmill|snatch|clean|jerk|muscle[\s-]?up|planche|handstand|pistol|pole vault|ring dip|wall walk/;
 const SPEC=/\| full|jefferson|zercher|pole vault|sternum|stahl|borzov|vmo|toe press|squat iso|rack pull iso|reactive|3 position|high hang|seated good morning|straddle|hip flexor|long lunge pulse|lunges to plateau|rolling db|extension to chin|unsupported|side split|bounces|scott curl/;
 const HEAVY=/^(?!.*(romanian|single|split|sandbag|kettlebell|\bkb\b)).*(deadlift|good morning|rack pull|clean|snatch|jefferson)/;
-const JOINT={knee:/squat|lunge|jump|pistol|nordic|step|split|bound|hop|leg ext|sissy|cossack|skater|box|vmo|landing/,
+const JOINT={knee:/sprint|\brun\b|squat|lunge|jump|pistol|nordic|step|split|bound|hop|leg ext|sissy|cossack|skater|box|vmo|landing/,
   back:/deadlift|\brdl\b|good morning|bent over|barbell row|jefferson|swing|clean|snatch|back ext|hyper|rack pull|zercher|gorilla/,
   shoulder:/overhead|press|\bdips?\b|handstand|pullover|snatch|jerk|muscle[\s-]?up|pike|behind the neck|wall walk|get-?up|windmill/,
   wrist:/push-?ups?|pushup|handstand|front squat|clean|planche|wall walk|front rack|crawl|bear\b|zottman|snatch/};
@@ -169,7 +189,8 @@ function clash(a,b){if(a.heavy&&b.heavy)return true;
   const sh=a.w.filter(x=>b.w.includes(x)).length;return sh>0&&sh>=Math.min(2,a.w.length,b.w.length);}
 const focus=(o,ctx)=>ctx.focus||o.focus;
 function weight(m,o,roles,ctx){let w=1+Math.log2(1+m.use)*.8;
-  if(o.from.length)w*=m.src.some(p=>o.from.includes(p))?4:.5;
+  if(o.from.length)w*=m.src.some(p=>o.from.includes(p)||o.from.includes((progById(p)||{}).group))?4:.5;
+  const A=apprOf(o);if(A&&A.prefer){try{if(new RegExp(A.prefer,'i').test(m.n))w*=2.2;}catch(e){}}
   if(o.fresh&&RECENT.has(m.k))w*=.15;
   if(FAST(o)){if(m.tech)w*=.05;if(m.eq.includes('bb'))w*=.35;if(m.free||m.eq.includes('kb'))w*=1.4;}
   else if(m.tech)w*=ctx.fin?.05:.5;
@@ -188,11 +209,11 @@ function choose(roles,o,ctx,skip){const c=candidates(roles,o,ctx,skip);if(!c.len
   let best=null,bw=-1;c.forEach(m=>{const w=weight(m,o,roles,ctx);if(w>bw){bw=w;best=m;}});return best;}
 function tplOf(o,focus){let t=TPL[focus||o.focus]||TPL.full;if(o.goal==='power'&&!['core','cond'].includes(focus||o.focus))t=[['plyo','power'],...t];return t;}
 function budget(o){const short=o.time<=20;return o.time*60-(o.warm?(short?180:300):0)-(o.fin?(short?120:270):0);}
-function mainSets(o,m,i){const g=GP[o.goal];let s=i<2&&m.compound?g.s[1]:g.s[0];
+function mainSets(o,m,i){const g=gpOf(o);let s=i<2&&m.compound?g.s[1]:g.s[0];
   if(o.eff==='easy')s=Math.max(2,s-1);if(o.time<=20)s=Math.max(2,Math.min(s,3));return s;}
-function workSec(o,m){const g=GP[o.goal];return m.hold||m.region==='cond'||m.region==='carry'?35:Math.max(20,(g.r[0]+g.r[1])/2*g.sec);}
-const superRest=o=>Math.round(GP[o.goal].rest*2/3/15)*15;
-function est(ms,o){const g=GP[o.goal];
+function workSec(o,m){const g=gpOf(o);return m.hold||m.region==='cond'||m.region==='carry'?35:Math.max(20,(g.r[0]+g.r[1])/2*g.sec);}
+const superRest=o=>Math.round(gpOf(o).rest*2/3/15)*15;
+function est(ms,o){const g=gpOf(o);
   if(o.fmt==='straight')return ms.reduce((t,m,i)=>t+mainSets(o,m,i)*(workSec(o,m)+g.rest)+45,0);
   if(o.fmt==='super'){let t=0;pairUp(ms.map((m,i)=>({m,i}))).forEach(p=>{const s=Math.max(...p.map(x=>mainSets(o,x.m,x.i)));
     t+=s*(p.reduce((a,x)=>a+workSec(o,x.m),0)+20*(p.length-1)+(p.length>1?superRest(o):g.rest))+60;});return t;}
@@ -214,7 +235,7 @@ function buildPicks(o,seed,soft,focus){if(!POOL)buildPool();
   return picks;}
 
 /* ---------- prescriptions ---------- */
-function rx(m,o,i,opt){const g=GP[o.goal];
+function rx(m,o,i,opt){const g=gpOf(o);
   let rpe=Math.min(10,Math.max(5,g.rpe+(o.eff==='easy'?-1.5:o.eff==='hard'?1:0)));
   let sets=mainSets(o,m,i),reps=`${g.r[0]}–${g.r[1]}`;const tips=[];
   const timed=m.hold||m.region==='cond'||m.region==='carry';
@@ -239,7 +260,8 @@ function rx(m,o,i,opt){const g=GP[o.goal];
     if(opt.deload){const n=parseInt(s,10);s=s.replace(/^\d+/,String(Math.max(2,Math.round(n*.6))));rpe=6;tips.length=0;tips.push('deload · same load, fewer sets, stop well short of failure');}}
   const nt=[];if(!timed||m.hold)nt.push(rpeTxt(rpe)+(opt&&opt.auto&&!timed&&!opt.deload?' on the last set':''));
   if(!opt||!opt.deload){if(o.eff==='hard'&&!timed)nt.push('last set to failure');if(o.goal==='muscle'&&!timed)nt.push('slow lowering');}
-  return{s,nt:[...nt,...tips].join(' · ')};}
+  const A=apprOf(o),cues=A&&A.cues&&(!opt||!opt.deload)&&!timed?A.cues.slice(0,2):[];
+  return{s,nt:[...nt,...cues,...tips].filter((x,i,a)=>a.indexOf(x)===i).join(' · ')};}
 const LET='ABCDEFGHIJ';
 const isPush=m=>m.roles.has('hpush')||m.roles.has('vpush')||m.roles.has('tri');
 const isPull=m=>m.roles.has('hpull')||m.roles.has('vpull')||m.roles.has('curl');
@@ -251,7 +273,7 @@ function interleave(list){const lo=list.filter(x=>x.m.region==='lower'),up=list.
   rest=list.filter(x=>x.m.region!=='lower'&&x.m.region!=='upper'),pw=rest.filter(x=>x.m.region==='cond'),tail=rest.filter(x=>x.m.region!=='cond'),out=[...pw];
   while(lo.length||up.length){if(lo.length)out.push(lo.shift());if(up.length)out.push(up.shift());}return[...out,...tail];}
 /* turn picks into session items; each item remembers its pick (_p) for swaps */
-function assemble(picks,o,opt){const g=GP[o.goal],out=[],short=o.time<=20;
+function assemble(picks,o,opt){const g=gpOf(o),out=[],short=o.time<=20;
   const main=picks.map((p,i)=>({p,i,m:META[p.k]})).filter(x=>x.m&&!x.p.fin),fin=picks.map((p,i)=>({p,i,m:META[p.k]})).filter(x=>x.m&&x.p.fin);
   if(o.warm)out.push({grp:'Warm-up'},{n:'Warm-up',s:`${short?3:5} min`,nt:'easy cardio and joint circles, then two light sets of the first exercise'});
   const row=(x,j,s,nt)=>({id:x.p.k,s,nt,_p:x.i});
@@ -267,10 +289,10 @@ function assemble(picks,o,opt){const g=GP[o.goal],out=[],short=o.time<=20;
       let R=Math.max(2,Math.min(5,Math.floor(budget(o)/arr.length/rt)));if(opt)R=opt.deload?Math.max(2,R-1):R+Math.min(2,opt.k%3);
       out.push({grp:`${arr.length>1?`Circuit ${LET[n]}`:'Circuit'} · ${R} rounds · rest ${restTxt(rr)} between rounds`});
       ord.forEach((x,j)=>{const r=rx(x.m,o,j,opt);const reps=r.s.replace(/^\d+\s*×\s*/,'');
-        out.push(row(x,j,`${R} × ${reps}`,r.nt.replace(/RPE [\d–.]+ · ?/,'')));});});}
+        out.push(row(x,j,`${R} × ${reps}`,r.nt.replace(/RPE [\d–.]+( · )?/,'')));});});}
   else{const cap=Math.max(6,Math.floor(budget(o)/60)),ord=interleave(main);
     const repsOf=(x)=>{const m=x.m;if(m.hold)return'20 s';if(m.region==='carry')return'20 m';if(m.region==='cond')return'10 cal';
-      const lo=o.fmt==='emom'?{power:3,strength:5,muscle:8,endur:12}[o.goal]:Math.round((GP[o.goal].r[0]+GP[o.goal].r[1])/2);
+      const lo=o.fmt==='emom'?{power:3,strength:5,muscle:8,endur:12}[o.goal]:Math.round((gpOf(o).r[0]+gpOf(o).r[1])/2);
       return`${lo+(opt&&!opt.deload?Math.min(2,opt.k%3):0)} reps`;};
     if(o.fmt==='amrap'){const blocks=cap>25?2:1,len=blocks>1?Math.floor((cap-2)/2):cap;
       for(let b=0;b<blocks;b++){if(b)out.push({grp:'Rest'},{n:'Rest 120 sec',s:''});
@@ -307,31 +329,72 @@ function chips(name,list,val,multi){return`<div class="gchips" data-g="${name}"$
   const on=multi?val.includes(k):val===k;return`<button class="gchip${on?' on':''}" data-v="${k}" aria-pressed="${on}">${esc(l)}${sub?`<small>${esc(sub)}</small>`:''}</button>`;}).join('')}</div>`;}
 const q=(t,inner)=>`<div class="gq"><h4>${t}</h4>${inner}</div>`;
 function questions(o,withFocus){
-  const progs=PROGRAMS.filter(P=>P.id!=='custom'&&!P.gen).map(P=>[P.id,P.n]);
+  const own=window.BLOCK_OWN_GROUP||'Your own builds';
+  const progs=[...new Set(PROGRAMS.filter(P=>P.id!=='custom'&&!P.gen).map(P=>P.group||'Other'))].sort((a,b)=>a===own?-1:b===own?1:a.localeCompare(b)).map(g=>[g,g]);
+  const ap=APPR(),cur=apprOf(o);
   return(withFocus?q('Time',chips('time',TIME,o.time))+q('Focus',chips('focus',FOCUS,o.focus)):q('Time per session',chips('time',TIME,o.time)))
    +q('Equipment',`<div class="gpre">${EQ_PRE.map(([l],i)=>`<button data-pre="${i}">${l}</button>`).join('')}</div>${chips('eq',EQ,o.eq,true)}<p class="gmsg" style="margin-top:8px">Bodyweight moves are always in.</p>`)
    +q('Goal',chips('goal',GOAL,o.goal))+q('Effort',chips('eff',EFF,o.eff))+q('Format',chips('fmt',FMT,o.fmt))
-   +`<details class="gmore"${o.avoid.length||o.from.length?' open':''}><summary>More options</summary>`
+   +`<details class="gmore"${o.avoid.length||o.from.length||o.appr?' open':''}><summary>More options</summary>`
+   +q('Approach',chips('appr',[['','None','plain rules'],...ap.map(a=>[a.id,a.n,a.by])],o.appr||'')+`<p class="gmsg" id="gApprTxt">${cur?esc(cur.details||cur.short||''):'Pick a coach’s way of training to shape sets, reps, rest and format. Only this session uses it.'}</p>`)
    +q('Go easy on',chips('avoid',AVOID,o.avoid,true))
    +q('Include',chips('extra',EXTRA,EXTRA.filter(([k])=>o[k]).map(([k])=>k),true))
-   +q('Lean on these programs',chips('from',progs,o.from,true))+`</details>`;}
+   +q('Lean on these creators',chips('from',progs,o.from,true))+`</details>`;}
 function wire(target,after){
   body.querySelectorAll('.gchips').forEach(box=>{const name=box.dataset.g,multi=!!box.dataset.m;
     box.querySelectorAll('.gchip').forEach(b=>b.onclick=()=>{const raw=b.dataset.v,v=isNaN(+raw)?raw:+raw;
       if(name==='extra'){target[v]=!target[v];b.classList.toggle('on',target[v]);b.setAttribute('aria-pressed',target[v]);}
       else if(multi){const a=target[name],i=a.indexOf(v);if(i<0)a.push(v);else a.splice(i,1);b.classList.toggle('on',i<0);b.setAttribute('aria-pressed',i<0);}
       else{target[name]=v;box.querySelectorAll('.gchip').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b);});}
+      if(name==='appr'){const A=apprOf(target),t=body.querySelector('#gApprTxt');if(t)t.textContent=A?(A.details||A.short||''):'';
+        if(A&&A.fmt&&target.fmt!==undefined){target.fmt=A.fmt;body.querySelectorAll('[data-g="fmt"] .gchip').forEach(x=>{const on=x.dataset.v===A.fmt;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on);});}}
       after&&after(name);});});
   body.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{target.eq=[...EQ_PRE[+b.dataset.pre][1]];
     body.querySelectorAll('[data-g="eq"] .gchip').forEach(x=>{const on=target.eq.includes(x.dataset.v);x.classList.toggle('on',on);x.setAttribute('aria-pressed',on);});after&&after('eq');});}
 function renderAsk(){
-  body.innerHTML=`<h2 class="gh">What do you have today?</h2><p class="sub">Tap your answers and get a session that fits. Your last answers stay picked.</p>
+  body.innerHTML=`<h2 class="gh">What do you have today?</h2><p class="sub">Describe it in a sentence, or tap your answers. Your last answers stay picked.</p>
+    <div class="gq"><textarea id="gTell" rows="2" class="gtitle" style="font-size:16px;font-weight:500;min-height:60px" placeholder="e.g. 20 min in a hotel room, sore knee, want to sweat"></textarea>
+    <button class="btn-s gwide" id="gTellGo">Build it from this</button><p class="gmsg" id="gTellMsg" role="status"></p></div>
     ${questions(G.o,true)}<button class="pgo ggo" id="gGo">Suggest a session</button>
     <button class="plink" id="gSelf" style="display:block;margin:16px auto 0">Build it myself instead</button>`;
   wire(G.o);
   body.querySelector('#gGo').onclick=()=>{S.genPrefs=JSON.parse(JSON.stringify(G.o));save();
     G.picks=buildPicks(G.o,G.seed);G.title=autoTitle(G.o);G.step=2;render();};
-  body.querySelector('#gSelf').onclick=()=>buildOpen(null);}
+  body.querySelector('#gSelf').onclick=()=>buildOpen(null);
+  body.querySelector('#gTellGo').onclick=async e=>{const t=body.querySelector('#gTell').value.trim(),msg=body.querySelector('#gTellMsg'),btn=e.currentTarget;
+    if(!t){body.querySelector('#gTell').focus();return;}
+    let patch=parseToday(t),title='';const A=window.blockAI;
+    if(A&&A.ready()){btn.disabled=true;btn.textContent='Reading…';
+      try{const r=await A.ask({system:A.SYS+' Turn a description of today into session settings. Keep what the user did not mention as "keep".',
+          prompt:`Today: ${t}\nCurrent answers: ${JSON.stringify(G.o)}\nApproaches available: ${APPR().map(a=>a.id+' = '+a.n+' ('+a.by+')').join('; ')}`,
+          schema:A.obj({time:A.num,focus:{type:'string',enum:[...FOCUS.map(f=>f[0]),'keep']},eq:A.arr({type:'string',enum:EQ.map(x=>x[0])}),eq_keep:{type:'boolean'},
+            goal:{type:'string',enum:[...GOAL.map(f=>f[0]),'keep']},eff:{type:'string',enum:[...EFF.map(f=>f[0]),'keep']},fmt:{type:'string',enum:[...FMT.map(f=>f[0]),'keep']},
+            avoid:A.arr({type:'string',enum:AVOID.map(x=>x[0])}),appr:{type:'string',enum:['',...APPR().map(a=>a.id),'keep']},title:A.str})});
+        patch={};if(r.time>0)patch.time=TIME.map(x=>x[0]).reduce((b,x)=>Math.abs(x-r.time)<Math.abs(b-r.time)?x:b,30);
+        ['focus','goal','eff','fmt','appr'].forEach(k=>{if(r[k]!=='keep')patch[k]=r[k];});if(!r.eq_keep)patch.eq=r.eq;patch.avoid=r.avoid;title=r.title;}
+      catch(err){msg.textContent=err.message+' Used the simple reader instead.';}
+      btn.disabled=false;btn.textContent='Build it from this';}
+    Object.assign(G.o,patch);S.genPrefs=JSON.parse(JSON.stringify(G.o));save();
+    G.picks=buildPicks(G.o,G.seed);G.title=title||autoTitle(G.o);G.step=2;render();};}
+/* a simple reader for "20 min hotel room, sore knee, want to sweat" — used without an AI key */
+function parseToday(t){const s=t.toLowerCase(),p={};
+  const m=s.match(/(\d{1,3})\s*(?:min|m\b|minuter|minutes)/)||s.match(/(?:half an hour|halvtimme)/)&&['',30]||s.match(/(?:an hour|en timme|timme)/)&&['',60];
+  if(m){const v=+m[1];p.time=TIME.map(x=>x[0]).reduce((b,x)=>Math.abs(x-v)<Math.abs(b-v)?x:b,30);}
+  const F=[['fpush',/push.{0,6}(legs|ben)/],['fpull',/pull.{0,6}(hinge|mark)/],['upper',/upper|överkropp/],['lower',/lower|legs?\b|ben\b|underkropp/],['push',/\bpush|press/],['pull',/\bpull|drag/],
+    ['core',/core|abs|mage|bål/],['cond',/sweat|svett|cardio|kondition|conditioning|flås/],['full',/full|hela kroppen|helkropp/]];
+  for(const[k,re]of F)if(re.test(s)){p.focus=k;break;}
+  if(/hotel|hotell|nothing|ingenting|no equipment|utan utrustning|bodyweight|kroppsvikt|travel|resa/.test(s))p.eq=[];
+  else{const eq=[];[['db',/dumbbell|hantel|hantlar|\bdb\b/],['kb',/kettlebell|\bkb\b/],['bb',/barbell|skivstång|stång|gym/],['bar',/pull-?up bar|räcke|chins/],['rings',/rings|ringar/],['band',/band/],['mach',/cable|kabel|maskin|gym/],['sb',/sandbag|sandsäck/]]
+    .forEach(([k,re])=>{if(re.test(s))eq.push(k);});if(eq.length)p.eq=eq;}
+  const av=[];[['knee',/knä|knee/],['back',/rygg|back/],['shoulder',/axel|shoulder/],['wrist',/handled|wrist/]].forEach(([k,re])=>{if(re.test(s)&&/(sore|ont|pain|skad|öm|injur|stel|tweak)/.test(s))av.push(k);});if(av.length)p.avoid=av;
+  if(/sweat|svett|flås|pulse|puls|cardio|kondition/.test(s)){p.goal='endur';p.fmt='circuit';}
+  else if(/heavy|tungt|strength|styrka|max/.test(s))p.goal='strength';
+  else if(/explosive|explosiv|power|snabb|jump|hopp/.test(s))p.goal='power';
+  else if(/muscle|muskler|pump|hypertroph|bygga/.test(s))p.goal='muscle';
+  if(/easy|lätt|tired|trött|lugnt|recover|återhämt/.test(s))p.eff='easy';else if(/hard|tufft|hårt|crush|maxa/.test(s))p.eff='hard';
+  if(/amrap/.test(s))p.fmt='amrap';else if(/emom/.test(s))p.fmt='emom';else if(/circuit|cirkel/.test(s))p.fmt='circuit';else if(/superset/.test(s))p.fmt='super';
+  return p;}
+window.blockParseToday=parseToday;
 const autoTitle=o=>`${lab(FOCUS,o.focus)} · ${lab(GOAL,o.goal).toLowerCase()}`;
 
 /* ---------- step 2: the suggestion ---------- */
@@ -344,6 +407,7 @@ function why(){const o=G.o,main=G.picks.filter(p=>!p.fin),parts=[];
   parts.push({straight:'Big lifts first while you are fresh, smaller work after.',super:'Each pair mixes upper and lower, or push and pull, so one side rests while the other works.',
     circuit:'Upper and lower alternate, so each station rests the one before it (Flolyfe: two upper, two lower, one core).',
     amrap:'Upper and lower alternate so you can keep moving. Score the rounds.',emom:'One exercise per minute in turn. What is left of the minute is your rest.'}[o.fmt]);
+  const A=apprOf(o);if(A)parts.push(`Approach: ${A.n} (${A.by}). ${A.short||''}`);
   const cnt={};main.forEach(p=>{const m=META[p.k];(m&&m.src||[]).forEach(id=>cnt[id]=(cnt[id]||0)+1);});
   const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,3).map(id=>(progById(id)||{}).n).filter(Boolean);
   if(top.length)parts.push(`From your programs: ${top.join(', ')}.`);
@@ -385,7 +449,7 @@ function renderSuggest(){const o=G.o,items=assemble(G.picks,o);
   $('gShuf').onclick=()=>{G.seed+=101;G.seen={};G.picks=buildPicks(o,G.seed);renderSuggest();};
   $('gStart').onclick=()=>{const k=saveDay();S.prog='custom';S.sess=k;save();playOpen('custom',k,'home');};
   $('gSave').onclick=()=>{saveDay();S.prog='custom';save();show('program');renderProgram();};
-  $('gProg').onclick=()=>{G.p.name='';G.step=3;render();};
+  $('gProg').onclick=()=>{G.p.name='';const A=apprOf(G.o);if(A&&A.prog)G.p.prog=A.prog;G.step=3;render();};
   $('gAsk').onclick=()=>{G.step=1;render();};
   $('gSelf').onclick=()=>buildOpen(null);}
 const clean=items=>items.map(it=>{const c={...it};delete c._p;if(!c.nt)delete c.nt;return c;});
@@ -462,6 +526,7 @@ function infoOf(g){const p=g.p||{},o=g.o||DEF,dl=p.weeks?deloadWeeks(p):[];
     <h4>How it progresses</h4><p>${PT[p.prog]||''} Bodyweight moves without added load use the rep increase instead. Holds, carries and conditioning get a little longer each week.</p>
     ${p.auto==='on'?'<h4>Autoregulation</h4><p>Each set has an RPE target that climbs a little through the block. Judge the last set: if it felt easier than the target, add 2.5–5 % next time; if it felt harder, take off 5 %. Your weights follow how you actually perform, not a fixed plan.</p>':''}
     <h4>Deloads</h4><p>${dl.length?`Week ${dl.join(', ')}: same load, about 40 % fewer sets, RPE 6. It clears fatigue before the next block.`:'No planned deloads. Take one when the RPE targets stop being reachable.'}</p>
+    ${apprOf(o)?`<h4>Approach</h4><p>${esc(apprOf(o).n)} · ${esc(apprOf(o).by)}. ${esc(apprOf(o).details||apprOf(o).short||'')}</p>`:''}
     <h4>Built from</h4><p>${esc(o.time)} min · ${esc(o.eq.map(e=>lab(EQ,e).toLowerCase()).join(', ')||'bodyweight')} · ${esc(lab(GOAL,o.goal).toLowerCase())} · ${esc(lab(EFF,o.eff).toLowerCase())} · ${esc(lab(FMT,o.fmt).toLowerCase())}</p>
     <h4>Where the rules come from</h4><p>Rep, set, rest and effort ranges per goal follow the Flolyfe functional fitness guidelines. The progressions and last-set RPE come from the Stronger by Science program builder. Time caps, supersets and sets taken close to failure come from Chris Detmering.</p>`;}
 
@@ -488,8 +553,33 @@ const _renderHome=renderHome;
 renderHome=function(){syncProgs();_renderHome();
   const own=document.getElementById('nOwn');
   if(own){own.onclick=genOpen;const s=own.querySelector('small');if(s)s.textContent='A few taps and you have a session that fits';}
+  try{renderGroups();}catch(e){console.warn(e);}
   document.querySelectorAll('#progList [data-p]').forEach(b=>{const P=progById(b.dataset.p),nm=b.querySelector('b');
     if(P&&nm&&!b.querySelector('.ptags'))nm.insertAdjacentHTML('afterend',tagHTML(P));});};
+/* programs grouped by creator, collapsed, with a type filter on top */
+const OWN=()=>window.BLOCK_OWN_GROUP||'Your own builds';
+const LSG='block-open-groups';let PFILT='';
+const openSet=()=>{try{return new Set(JSON.parse(localStorage.getItem(LSG)||'null')||[OWN()]);}catch(e){return new Set([OWN()]);}};
+const keepOpen=s=>{try{localStorage.setItem(LSG,JSON.stringify([...s]));}catch(e){}};
+const rowHTML=(P,ey)=>`<button class="hrowp" data-p="${P.id}"><span><em class="ey">${esc(ey||`${progTotal(P)} sessions`)}</em><b>${esc(P.n)}</b><small>${esc(P.sub)}</small></span>
+  <span class="n">${progDone(P)}/${progTotal(P)}</span><span class="chev">›</span></button>`;
+function renderGroups(){const box=document.getElementById('progList');if(!box)return;
+  const cur=box.querySelector('.hcur'),list=PROGRAMS.filter(P=>(P.id!=='custom'||(S.custom&&S.custom.length))&&P.id!==S.active);
+  const prim={};list.forEach(P=>{const t=typesOf(P)[0];if(t&&t!=='Own sessions'&&t!=='Made by you')prim[t]=(prim[t]||0)+1;});
+  const types=Object.keys(prim).sort((a,b)=>prim[b]-prim[a]).slice(0,9);if(PFILT&&!types.includes(PFILT))PFILT='';
+  let h=`<div class="pfilt" role="group" aria-label="Filter programs by type"><button class="${PFILT?'':'on'}" data-t="">All · ${list.length}</button>${types.map(t=>`<button class="${PFILT===t?'on':''}" data-t="${esc(t)}">${esc(t)} · ${prim[t]}</button>`).join('')}</div>`;
+  if(PFILT){h+=`<div class="hlist">${list.filter(P=>typesOf(P).includes(PFILT)).map(P=>rowHTML(P,`${P.group||'Other'} · ${progTotal(P)} sessions`)).join('')}</div>`;}
+  else{const g={};list.forEach(P=>{const k=P.gen||P.id==='custom'?OWN():(P.group||'Other');(g[k]=g[k]||[]).push(P);});
+    const names=Object.keys(g).sort((a,b)=>a===OWN()?-1:b===OWN()?1:a.localeCompare(b)),open=openSet();
+    h+=names.map(n=>{const on=open.has(n),ps=g[n],done=ps.reduce((a,P)=>a+progDone(P),0),blurb=(window.BLOCK_GROUPS||{})[n];
+      return`<section class="pgrp${on?' on':''}"><button class="pgh" data-g="${esc(n)}" aria-expanded="${on}"><span><b>${esc(n)}</b><small>${ps.length} program${ps.length>1?'s':''}${done?` · ${done} sessions done`:''}</small></span><span class="chev">›</span></button>
+        ${on?`${blurb&&blurb.blurb?`<p class="pgb">${esc(blurb.blurb)}</p>`:''}<div class="hlist">${ps.map(P=>rowHTML(P)).join('')}</div>`:''}</section>`;}).join('');}
+  box.innerHTML='';if(cur)box.append(cur);box.insertAdjacentHTML('beforeend',h);
+  const openP=P=>{S.prog=P.id;progTab='sessions';save();show('program');renderProgram();};
+  box.querySelectorAll('.hrowp[data-p]').forEach(b=>b.onclick=()=>openP(progById(b.dataset.p)));
+  if(cur)cur.onclick=()=>openP(progById(cur.dataset.p));
+  box.querySelectorAll('.pgh').forEach(b=>b.onclick=()=>{const s=openSet(),n=b.dataset.g;if(s.has(n))s.delete(n);else s.add(n);keepOpen(s);renderHome();});
+  box.querySelectorAll('.pfilt button').forEach(b=>b.onclick=()=>{PFILT=b.dataset.t;renderHome();});}
 const _renderProgram=renderProgram;
 renderProgram=function(){_renderProgram();const P=progById(S.prog);
   let t=document.getElementById('progTags');if(!t){t=document.createElement('div');t.id='progTags';document.getElementById('progSub').after(t);}

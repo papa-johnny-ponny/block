@@ -131,7 +131,7 @@ function about(ex){
 }
 /* step-by-step text: by EX key, else by plain name with counts/sides stripped ("5X Clean (R)" → "Clean") */
 function stepsOf(key,name){const ST=window.BLOCK_STEPS||{};if(ST[key])return ST[key];
-  if(/^(ig_|u_)/.test(String(key)))return null;/* own clips and exercises: no guessed steps */
+  if(/^(ig_|u_)/.test(String(key)))return (S.clips&&S.clips[key]&&S.clips[key].st)||null;/* own clips and exercises: only their own steps */
   const n=String(name||'').replace(/^\s*[\d\-–\/]+\s*x\s+/i,'').replace(/\s*\([^)]*\)\s*$/,'').trim().toLowerCase();
   const hit=Object.keys(ST).find(k=>k.startsWith('x:')&&k.slice(2).toLowerCase()===n);if(hit)return ST[hit];
   const part=Object.keys(ST).filter(k=>k.startsWith('x:')).sort((a,b)=>b.length-a.length).find(k=>n.includes(k.slice(2).toLowerCase()));
