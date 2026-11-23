@@ -58,6 +58,7 @@ function detailOf(prog,key,items){
 /* keep the queue, program name and last-trained time current on every save */
 function refresh(){
   const c=S&&S.cal;if(!c||!c.on)return;
+  if(!progById(c.prog))return;/* program pack not loaded yet: keep the queue as it is */
   c.queue=queueOf(c);
   try{c.pn=progById(c.prog).n;}catch(e){c.pn=c.prog;}
   const withSets=new Set(S.sets.map(r=>r.sid));
@@ -65,6 +66,9 @@ function refresh(){
 }
 const _save=save;
 save=function(){try{refresh();}catch(e){}_save();};
+/* the event text format changed (name on one line, details below): rewrite the queue once so the feed picks it up */
+const CAL_FMT=2;
+setTimeout(()=>{try{if(S&&S.cal&&S.cal.on&&S.cal.fmt!==CAL_FMT){S.cal.fmt=CAL_FMT;save();}}catch(e){}},1500);
 
 function newKey(){const b=new Uint8Array(16);crypto.getRandomValues(b);return[...b].map(x=>x.toString(16).padStart(2,'0')).join('');}
 function setup(){

@@ -168,7 +168,7 @@ function wire(){
     if(!email||!password){msg('Enter your email and password.');return;}
     ui.email=email;q('syIn').disabled=true;msg('Signing in…');
     try{keep(await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})}));
-      meta={};wr(META_KEY,meta);ui.msg='';renderSettings();sync(true);}
+      meta={};wr(META_KEY,meta);ui.msg='';renderSettings();sync(true);(window.BLOCK_SYNC.onSignIn||[]).forEach(f=>{try{f();}catch(e){}});}
     catch(err){q('syIn').disabled=false;msg('Could not sign in: '+err.message);}};
 }
 const _renderSettings=renderSettings;
@@ -179,6 +179,6 @@ renderSettings=function(){_renderSettings();
 /* ----- when to sync ----- */
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sync();});
 window.addEventListener('online',()=>sync());
-window.BLOCK_SYNC={signedIn:()=>!!auth};
+window.BLOCK_SYNC={signedIn:()=>!!auth,token,url:SB_URL,key:SB_KEY,onSignIn:[]};
 if(auth)sync();
 })();
