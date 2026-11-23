@@ -66,7 +66,8 @@ async function upload(list,out){const Y=window.BLOCK_SYNC;
     const r=await fetch(Y.url+'/rest/v1/block_packs?on_conflict=id',{method:'POST',headers:H,
       body:JSON.stringify({id:x.id,data,updated_at:new Date().toISOString()})});
     if(!r.ok){out.textContent=`${x.id} failed: ${r.status} ${(await r.text()).slice(0,120)}`;return;}ok++;}
-  out.textContent=`Uploaded ${ok} packs.`;await fromServer().then(n=>{if(n)repaint();}).catch(()=>{});}
+  out.textContent=`Uploaded ${ok} packs.`;await fromServer().then(n=>{if(n)repaint();}).catch(()=>{});
+  try{await uploadMedia(out);}catch(e){out.textContent='Video upload stopped: '+e.message;}}
 async function mountSection(){const v=document.getElementById('v-settings');if(!v)return;
   let box=document.getElementById('packSet');
   if(!box){box=document.createElement('div');box.id='packSet';
@@ -79,5 +80,33 @@ async function mountSection(){const v=document.getElementById('v-settings');if(!
     b.textContent=`Upload ${idx.length} packs from this computer`;box.append(b);
     b.onclick=()=>{b.disabled=true;upload(idx,box.querySelector('#packMsg')).finally(()=>{b.disabled=false;});};}}
 const _show=show;show=function(v){_show(v);if(v==='settings')mountSection();};
+
+/* ----- private videos in Supabase Storage (bucket block-media, see supabase/media.sql) ----- */
+const SIGNED={};
+async function mediaURL(path){const hit=SIGNED[path];if(hit&&hit.exp>Date.now()+60000)return hit.url;
+  const Y=window.BLOCK_SYNC;if(!Y||!Y.signedIn())throw new Error('Sign in under Settings → Sync to watch this video.');
+  const tk=await Y.token(),r=await fetch(`${Y.url}/storage/v1/object/sign/block-media/${path.split('/').map(encodeURIComponent).join('/')}`,
+    {method:'POST',headers:{apikey:Y.key,Authorization:'Bearer '+tk,'Content-Type':'application/json'},body:JSON.stringify({expiresIn:7200})});
+  if(!r.ok)throw new Error(r.status===404||r.status===400?'This video is not uploaded yet.':'Could not load the video.');
+  const j=await r.json(),url=Y.url+'/storage/v1'+(j.signedURL||j.signedUrl);SIGNED[path]={url,exp:Date.now()+7000e3};return url;}
+window.blockMedia=mediaURL;
+function fillVideos(root){(root||document).querySelectorAll('video[data-sbm]:not([src])').forEach(v=>{const p=v.dataset.sbm;v.setAttribute('src','');
+  mediaURL(p).then(u=>{v.src=u;}).catch(e=>{const m=document.createElement('p');m.className='exlink';m.style.cssText='position:absolute;inset:auto 0 0 0;margin:0;padding:12px;text-align:center';m.textContent=e.message;v.after(m);});});}
+new MutationObserver(()=>fillVideos(document.getElementById('v-ex'))).observe(document.getElementById('v-ex')||document.body,{childList:true,subtree:true});
+
+/* upload the local private/media files that are missing in the bucket */
+async function uploadMedia(out){let list=[];try{const r=await fetch('private/media/index.json',{cache:'no-store'});if(r.ok)list=await r.json();}catch(e){}
+  if(!list.length)return;const Y=window.BLOCK_SYNC,tk=await Y.token(),H={apikey:Y.key,Authorization:'Bearer '+tk};
+  const have={};for(const pre of [...new Set(list.map(x=>x.path.split('/')[0]))]){
+    const r=await fetch(`${Y.url}/storage/v1/object/list/block-media`,{method:'POST',headers:{...H,'Content-Type':'application/json'},body:JSON.stringify({prefix:pre,limit:1000})});
+    if(!r.ok){out.textContent='The video bucket is not set up yet (run supabase/media.sql).';return;}
+    (await r.json()).forEach(o=>{have[pre+'/'+o.name]=(o.metadata&&o.metadata.size)||0;});}
+  const todo=list.filter(x=>have[x.path]!==x.bytes);let n=0;
+  for(const x of todo){out.textContent=`Uploading videos… ${n+1} of ${todo.length}`;
+    const blob=await (await fetch('private/media/'+x.path,{cache:'no-store'})).blob();
+    const r=await fetch(`${Y.url}/storage/v1/object/block-media/${x.path}`,{method:'POST',headers:{...H,'x-upsert':'true','Content-Type':'video/mp4'},body:blob});
+    if(!r.ok){out.textContent=`Video ${x.path} failed: ${r.status} ${(await r.text()).slice(0,100)}`;return;}n++;}
+  out.textContent=todo.length?`Uploaded ${n} videos.`:'All videos are already uploaded.';}
+window.blockUploadMedia=uploadMedia;
 window.BLOCK_PACKS={loaded:()=>[...loaded],refresh:()=>fromServer()};
 })();

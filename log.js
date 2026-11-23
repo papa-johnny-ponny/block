@@ -117,7 +117,7 @@ const css=`
 .adc h4{margin:0 0 4px;color:var(--dim);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
 .adc .xr{padding:10px 0}
 .adc .xr+.xr{border-top:1px solid var(--line);border-radius:0}
-.adb{flex:none;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;background:var(--accent);color:#000}
+.adb{flex:none;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;background:none;border:1px solid var(--line);color:#fff}
 .adb.on{background:var(--surface-2);color:var(--dim)}
 .sitem{background:var(--surface);border-radius:18px;border-bottom:0;margin:0 0 10px;padding:0 16px}
 .sitem .slist{padding:16px 0;align-items:flex-start}
@@ -587,7 +587,8 @@ function onTick(){
 setInterval(onTick,500);
 
 /* ----- thumbnails ----- */
-function thumbOf(ex){const u=(S.video||{})[ex.key]||ex.v||(EX[ex.key]||{}).v,id=u?ytId(u):null;
+function thumbOf(ex){const u=(S.video||{})[ex.key]||ex.v||(EX[ex.key]||{}).v;let id=u?ytId(u):null;if(!id){const y=(EX[ex.key]||{}).yt;id=y?ytId(y):null;}
+  if(!id){const w=String(u||'').match(/wistia\.(?:net|com)\/(?:embed\/iframe|medias)\/(\w+)/);if(w)return`https://fast.wistia.com/embed/medias/${w[1]}/swatch`;}
   return id?`https://i.ytimg.com/vi/${id}/mqdefault.jpg`:null;}
 const initials=n=>String(n||'').replace(/\(.*?\)/g,'').split(/[\s·-]+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
 function thumbHTML(ex,size){const t=thumbOf(ex);
@@ -620,8 +621,9 @@ function guessEq(ex){const q=S.eq&&S.eq[ex.key.replace(/^x:/,'')];if(q)return q;
 function exRowHTML(prog,key,x,size,withEq,right){
   const k=logKey(prog,key,x.idx),ex=exFor(x.item,k),pl=planOf(prog,key,x,ex),e=entry(prog,key,x.idx);
   const nt=[x.sp.nt,e.broke?'form broke':'',e.skip?'skipped today':''].filter(Boolean).join(' · ');
-  return `<span class="xr-in" style="display:contents">${thumbHTML(ex,size)}<span class="xm"><b>${pl.n?`<em>${pl.n}x</em>`:''}${esc(ex.n)}</b>
-    <span class="xl">${withEq&&x.item.id?`<span class="xeq" data-eq="1">${esc(guessEq({...ex,key:x.item.id}))} ⇅</span>`:''}<span>${esc(pl.t)}</span></span>
+  const rx=[pl.n?`${pl.n} × ${pl.t||''}`.replace(/ × $/,' sets'):pl.t].filter(Boolean).join('');
+  return `<span class="xr-in" style="display:contents">${thumbHTML(ex,size)}<span class="xm"><b>${esc(ex.n)}</b>
+    <span class="xl">${withEq&&x.item.id?`<span class="xeq" data-eq="1">${esc(guessEq({...ex,key:x.item.id}))} ⇅</span>`:''}<span class="xrx">${esc(rx)}</span></span>
     ${nt?`<small>${esc(nt)}</small>`:''}</span>${right||''}</span>`;
 }
 
@@ -643,8 +645,8 @@ function tipsFor(prog,key){if(prog==='nogi')return[];
   Object.keys(added).forEach(id=>{if(!tips.some(t=>t[0]===id))tips.push([id,added[id].s,'added']);});
   return tips.filter(t=>EX[t[0]]).map(t=>({id:t[0],s:t[1],why:t[2],on:!!added[t[0]]}));}
 function addonsHTML(prog,key,title){const tips=tipsFor(prog,key);if(!tips.length)return'';
-  return `<div class="adc"><h4>${esc(title||'Grip pairing')}</h4>${tips.map(t=>{const ex=exOf({id:t.id});
-    return `<div class="xr">${thumbHTML(ex,44)}<span class="xm"><b>${esc(ex.n)}</b><span class="xl"><span>${esc(t.s)}${t.why!=='added'?' · '+esc(t.why):''}</span></span></span>
+  return `<div class="adc"><h4>${esc(title||'Add-ons · grip and neck, if you want')}</h4>${tips.map(t=>{const ex=exOf({id:t.id});
+    return `<div class="xr">${thumbHTML(ex,44)}<span class="xm"><b>${esc(ex.n)}</b><span class="xl"><span class="xrx">${esc(t.s)}</span></span>${t.why!=='added'?`<small>${esc(t.why.replace(/^\w/,c=>c.toUpperCase()))}</small>`:''}</span>
       <button class="adb ${t.on?'on':''}" data-add="${t.id}" data-s="${esc(t.s)}" aria-pressed="${t.on}">${t.on?'Added ✓':'+ Add'}</button></div>`;}).join('')}</div>`;}
 function wireAddons(root,prog,key,redraw){
   root.querySelectorAll('[data-add]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();addonToggle(prog,key,b.dataset.add,b.dataset.s);redraw();});}
@@ -681,7 +683,7 @@ slDetail=function(P,d){
   for(const x of items){
     if(x.item.grp){h+=`<p class="sgh" style="margin:14px 0 2px">${esc(x.item.grp)}</p>`;continue;}
     h+=`<button class="xr" data-pv="${x.idx}" aria-label="Preview ${esc(exFor(x.item,logKey(P.id,d.key,x.idx)).n)}">${exRowHTML(P.id,d.key,x,44,false,'<span class="chev">›</span>')}</button>`;}
-  return h+addonsHTML(P.id,d.key,'Grip pairing · add if you want')
+  return h+addonsHTML(P.id,d.key,'Add-ons · grip and neck, if you want')
     +`<div class="acts"><button class="btn-s on" data-go="start">Start session</button><button class="btn-s" data-go="open">Details</button></div>`;
 };
 const _slSet=slSet;
@@ -698,7 +700,10 @@ renderSessionList=function(P){_rslC(P);
     let n=0,m=null,names='';try{const r=realItems(sessionOf(P.id,d.key).items);n=r.length;m=estMinutes(P.id,d.key);
       names=r.map(x=>exFor(x.item,logKey(P.id,d.key,x.idx)).n).join(' · ');}catch(e){}
     const done=sessDone(P.id,d.key),cnt=sessCount(P.id,d.key);
-    l.insertAdjacentHTML('beforeend',`<span class="sm">${n} exercise${n===1?'':'s'}${m?` · ~${m} min`:''}${!done&&cnt?` · ${cnt} of ${n} logged`:''}</span>${names?`<span class="sn">${esc(names)}</span>`:''}`);});};
+    l.insertAdjacentHTML('beforeend',`<span class="sm">${n} exercise${n===1?'':'s'}${m?` · ~${m} min`:''}${!done&&cnt?` · ${cnt} of ${n} logged`:''}</span>${names?`<span class="sn">${esc(names)}</span>`:''}`);});
+  let head='';[...document.getElementById('sessionList').children].forEach(c=>{if(c.classList.contains('grp')){head=c.textContent.trim();return;}
+    const e=c.querySelector&&c.querySelector('.slist .e');if(!e||!head)return;const t=e.textContent.trim();
+    if(t===head||t.startsWith(head+' · ')){const rest=t.slice(head.length).replace(/^ · /,'');e.textContent=rest?rest.charAt(0).toUpperCase()+rest.slice(1):'';}});};
 
 /* ----- wiring into the app ----- */
 const _show=show;

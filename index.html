@@ -3479,7 +3479,7 @@ paintItems=function(box,prog,sessKey,items){
   });
   if(prog!=='nogi'&&!edit){const tips=gripTips(real.map(x=>x.item.id));
     if(tips.length){const t=document.createElement('div');t.className='tipc';
-      t.innerHTML=`<p class="sslab" style="margin:0 0 8px">Grip pairing</p>${tips.map(([id,sc,why])=>
+      t.innerHTML=`<p class="sslab" style="margin:0 0 8px">Add-ons · grip and neck</p>${tips.map(([id,sc,why])=>
         `<button class="tiprow" data-id="${id}"><b>${esc(EX[id].n)}</b><small>${sc} · ${why}</small></button>`).join('')}`;
       t.querySelectorAll('.tiprow').forEach(b=>b.onclick=()=>openSheet(exOf({id:b.dataset.id}),null));
       box.appendChild(t);}}

@@ -26,4 +26,16 @@ R.program({id:'qk_willink',n:'Willink Five · Quick Sessions',sub:'Pull-ups, pus
 <h4>The idea</h4><p>Pull-ups, push-ups, dips, squats and burpees. They need almost no equipment, cover the whole body and are easy to do a lot of, which is how he trained them in SEAL training and still does.</p>
 <h4>Four ways to run them</h4><p><b>AMRAP 15:</b> as many rounds as you can in 15 minutes. <b>EMOM 20:</b> one move per minute in turn, rest with what is left. <b>Ladder:</b> one step more each round until 20 minutes are up. <b>Century:</b> 25 · 50 · 50 · 75 · 25 for time, split as you like.</p>
 <h4>Scaling</h4><p>Band-assisted pull-ups or rows, bench dips, knee push-ups. Keep the form clean: the clock rewards quality reps, not sloppy ones.</p>`);
+
+/* neck training as an add-on next to the grip pairings */
+R.ex({neck_flexion:{n:'Neck Flexion · Plate or Band',c:'weighted',v:'https://www.youtube.com/watch?v=5RlmOGEvOns'},
+  neck_extension:{n:'Neck Extension · Plate or Band',c:'weighted',v:'https://www.youtube.com/watch?v=_D2VB-q3ywM'}});
+R.steps({neck_flexion:['Lie on your back on a bench with the head off the end, or loop a light band around the forehead.','Hold a light plate on the forehead (on a towel).','Tuck the chin and curl the head up toward the chest.','Lower slowly to a gentle stretch. Light weight, smooth reps.'],
+  neck_extension:['Lie face down on a bench with the head off the end, or loop a band around the back of the head.','Hold a light plate on the back of the head (on a towel).','Lift the head until you look forward, without cranking the neck back.','Lower slowly. Light weight, smooth reps.']});
+if(typeof gripTips==='function'){const _g=gripTips;
+  gripTips=function(ids){const out=_g(ids);ids=(ids||[]).filter(Boolean);
+    const neck=ids.some(i=>/neck/.test(i)||/neck/i.test((EX[i]||{}).n||''));
+    const strength=ids.filter(i=>EX[i]&&['weighted','cal','bodyweight','power','carry'].includes(EX[i].c)).length>=2;
+    if(!neck&&strength){out.push(['neck_flexion','2 × 12–15','neck: light and quick, nothing overlaps']);out.push(['neck_extension','2 × 12–15','do it with the flexion as a pair']);}
+    return out.slice(0,4);};}
 })();
