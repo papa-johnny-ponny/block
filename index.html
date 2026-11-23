@@ -2386,7 +2386,7 @@ function protoOf(b,prog,key){
   const nm=b.name||'';
   const iv=nm.match(/(?:^|[\s(–-])(\d{2})\/(\d{2})(?=[\s)]|$)/);
   const rounds=+((nm.match(/X\s*(\d+)\s*Round/i)||[])[1]||1);
-  const mm=[...nm.matchAll(/(AMRAP|METCON|EMOM|LADDER|TABATA|ABS)\s*(\d+(?:\.\d+)?)/gi)];
+  const mm=[...nm.matchAll(/(AMRAP|METCON|E\d*MOM|LADDER|TABATA|ABS)\s*(\d+(?:\.\d+)?)/gi)];
   const m=mm.length?+mm[mm.length-1][2]:null;
   const D=b.items.map(x=>densOf(x.item,logKey(prog,key,x.idx))).find(Boolean);
   if(D)return{mode:'dens',D,label:D.clock?`${D.clock} min · score in ${UNITS[D.score]}`:'For time'};

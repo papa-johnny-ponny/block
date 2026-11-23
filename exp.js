@@ -115,9 +115,12 @@ function about(ex){
   const sm=url&&String(url).match(/streamable\.com\/(?:e\/)?([\w]+)/),wi=url&&String(url).match(/wistia\.(?:net|com)\/(?:embed\/iframe|medias)\/([\w]+)/);
   const frame=src=>`<div class="exvid"><iframe src="${src}" title="${esc(ex.n)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe></div>`;
   const sbm=url&&/^sbm:/.test(url)?String(url).slice(4):null;
+  const ig=url&&String(url).match(/instagram\.com\/(p|reels?|tv)\/([\w-]+)/i);
   let h=sbm?`<div class="exvid"><video data-sbm="${esc(sbm)}" controls playsinline preload="metadata" style="position:absolute;inset:0;width:100%;height:100%;background:#000"></video></div>`
     :vid?`${frame(`https://www.youtube-nocookie.com/embed/${vid}?rel=0&playsinline=1`)}
       <a class="exlink" href="${esc(url)}" target="_blank" rel="noopener">Open on YouTube</a>`
+    :ig?`<div class="exvid" style="aspect-ratio:auto;height:min(620px,calc(100vh - 220px))"><iframe src="https://www.instagram.com/${/reel/i.test(ig[1])?'reel':'p'}/${ig[2]}/embed/" title="${esc(ex.n)}" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>
+      <a class="exlink" href="${esc(url)}" target="_blank" rel="noopener">Open on Instagram</a>`
     :sm?frame(`https://streamable.com/e/${sm[1]}`)
     :wi?frame(`https://fast.wistia.net/embed/iframe/${wi[1]}?playsinline=1`)
     :`<a class="exlink" href="${esc(ytSearch(ex.n))}" target="_blank" rel="noopener">Search on YouTube</a>`;
