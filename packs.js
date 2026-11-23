@@ -15,7 +15,9 @@ function register(pack){if(!pack||!pack.id||loaded.has(pack.id))return false;loa
     if(typeof RM_ALIAS==='object')Object.keys(pack.alias||{}).forEach(k=>{if(!RM_ALIAS[k])RM_ALIAS[k]=pack.alias[k];});
     (pack.approaches||[]).forEach(a=>BLOCK_REG.approach(a));
     Object.keys(pack.groups||{}).forEach(n=>BLOCK_REG.group(n,pack.groups[n]));
-    (pack.programs||[]).forEach(P=>BLOCK_REG.program(P,(pack.info||{})[P.id]));}
+    (pack.programs||[]).forEach(P=>BLOCK_REG.program(P,(pack.info||{})[P.id]));
+    if(pack.media)BLOCK_REG.media(pack.media);
+    Object.keys(pack.infoAdd||{}).forEach(id=>BLOCK_REG.infoAdd(id,pack.infoAdd[id]));}
   catch(e){console.warn('[BLOCK packs]',pack.id,e);}
   return true;}
 const visible=v=>{const el=document.getElementById('v-'+v);return el&&!el.classList.contains('hide');};

@@ -34,7 +34,8 @@ for(const file of fs.readdirSync(SRC).filter(f=>f.endsWith('.js')).sort()){
   const id=file.replace(/\.js$/,'');
   const exB=new Set(Object.keys(G('EX'))),progB=new Set(G('PROGRAMS').map(p=>p.id)),infoB=new Set(Object.keys(G('INFO'))),
     stB=new Set(Object.keys(G('window.BLOCK_STEPS_EXTRA'))),apB=new Set(G('window.BLOCK_APPROACHES').map(a=>a.id)),
-    grB=JSON.stringify(G('window.BLOCK_GROUPS')),alB=new Set(Object.keys(G('RM_ALIAS')));
+    grB=JSON.stringify(G('window.BLOCK_GROUPS')),alB=new Set(Object.keys(G('RM_ALIAS'))),
+    mdB=JSON.stringify(G('window.BLOCK_MEDIA')),iaB=JSON.stringify(G('window.BLOCK_INFO_ADD'));
   run(fs.readFileSync(SRC+file,'utf8'),file);
   const EX=G('EX'),ST=G('window.BLOCK_STEPS_EXTRA'),INFO=G('INFO'),AL=G('RM_ALIAS'),GR=G('window.BLOCK_GROUPS');
   const pick=(o,keys)=>Object.fromEntries(keys.map(k=>[k,o[k]]));
@@ -46,7 +47,9 @@ for(const file of fs.readdirSync(SRC).filter(f=>f.endsWith('.js')).sort()){
     info:pick(INFO,Object.keys(INFO).filter(k=>!infoB.has(k))),
     approaches:JSON.parse(JSON.stringify(G('window.BLOCK_APPROACHES').filter(a=>!apB.has(a.id)))),
     groups:JSON.parse(JSON.stringify(GR)),
-    alias:pick(AL,Object.keys(AL).filter(k=>!alB.has(k)))};
+    alias:pick(AL,Object.keys(AL).filter(k=>!alB.has(k))),
+    media:(()=>{const now=G('window.BLOCK_MEDIA'),was=JSON.parse(mdB);return JSON.parse(JSON.stringify(Object.fromEntries(Object.keys(now).filter(k=>JSON.stringify(now[k])!==JSON.stringify(was[k])).map(k=>[k,now[k]]))));})(),
+    infoAdd:(()=>{const now=G('window.BLOCK_INFO_ADD'),was=JSON.parse(iaB);return Object.fromEntries(Object.keys(now).filter(k=>now[k]!==was[k]).map(k=>[k,now[k].slice((was[k]||'').length)]));})()};
   const json=JSON.stringify(pack);fs.writeFileSync(OUT+id+'.json',json);
   index.push({id,bytes:json.length,programs:progs.length});
   console.log(id.padEnd(20),String(progs.length).padStart(3),'programs',(json.length/1024).toFixed(0).padStart(5),'KB');
