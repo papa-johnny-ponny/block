@@ -57,7 +57,8 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 /* ----- settings: status, and an upload button in the local copy of the app ----- */
 async function localIndex(){if(!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname))return null;
   try{const r=await fetch('private/packs/index.json',{cache:'no-store'});return r.ok?await r.json():null;}catch(e){return null;}}
-async function upload(list,out){const Y=window.BLOCK_SYNC;
+const say=(t)=>{const m=document.getElementById('packMsg');if(m)m.textContent=t;status=t;};
+async function upload(list,out){out={set textContent(t){say(t);}};const Y=window.BLOCK_SYNC;
   if(!Y||!Y.signedIn()){out.textContent='Sign in under Sync first.';return;}
   const tk=await Y.token(),H={apikey:Y.key,Authorization:'Bearer '+tk,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'};
   let ok=0;
@@ -95,7 +96,7 @@ function fillVideos(root){(root||document).querySelectorAll('video[data-sbm]:not
 new MutationObserver(()=>fillVideos(document.getElementById('v-ex'))).observe(document.getElementById('v-ex')||document.body,{childList:true,subtree:true});
 
 /* upload the local private/media files that are missing in the bucket */
-async function uploadMedia(out){let list=[];try{const r=await fetch('private/media/index.json',{cache:'no-store'});if(r.ok)list=await r.json();}catch(e){}
+async function uploadMedia(out){out={set textContent(t){say(t);}};let list=[];try{const r=await fetch('private/media/index.json',{cache:'no-store'});if(r.ok)list=await r.json();}catch(e){}
   if(!list.length)return;const Y=window.BLOCK_SYNC,tk=await Y.token(),H={apikey:Y.key,Authorization:'Bearer '+tk};
   const have={};for(const pre of [...new Set(list.map(x=>x.path.split('/')[0]))]){
     const r=await fetch(`${Y.url}/storage/v1/object/list/block-media`,{method:'POST',headers:{...H,'Content-Type':'application/json'},body:JSON.stringify({prefix:pre,limit:1000})});
