@@ -112,8 +112,12 @@ function render(){
 }
 function about(ex){
   const key=ex.key,url=(S.video||{})[key]||ex.v,vid=url?ytId(url):null;
-  let h=vid?`<div class="exvid"><iframe src="https://www.youtube-nocookie.com/embed/${vid}?rel=0&playsinline=1" title="${esc(ex.n)}" allow="encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe></div>
+  const sm=url&&String(url).match(/streamable\.com\/(?:e\/)?([\w]+)/),wi=url&&String(url).match(/wistia\.(?:net|com)\/(?:embed\/iframe|medias)\/([\w]+)/);
+  const frame=src=>`<div class="exvid"><iframe src="${src}" title="${esc(ex.n)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe></div>`;
+  let h=vid?`${frame(`https://www.youtube-nocookie.com/embed/${vid}?rel=0&playsinline=1`)}
       <a class="exlink" href="${esc(url)}" target="_blank" rel="noopener">Open on YouTube</a>`
+    :sm?frame(`https://streamable.com/e/${sm[1]}`)
+    :wi?frame(`https://fast.wistia.net/embed/iframe/${wi[1]}?playsinline=1`)
     :`<a class="exlink" href="${esc(ytSearch(ex.n))}" target="_blank" rel="noopener">Search on YouTube</a>`;
   const d=ex.d||(EX[key]||{}).d;if(d)h+=`<p class="exdesc">${esc(d)}</p>`;
   const st=stepsOf(key,ex.n);
