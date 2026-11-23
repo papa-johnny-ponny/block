@@ -18,6 +18,10 @@ const css=`
 .exvid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .exlink{display:inline-block;margin-top:10px;color:var(--accent-text);font-size:14px;font-weight:600;text-decoration:none}
 .exdesc{color:var(--dim);font-size:15px;line-height:1.5;margin:14px 0 0}
+.exsteps{list-style:none;margin:0;padding:0;counter-reset:st}
+.exsteps li{counter-increment:st;display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;font-size:15px;line-height:1.5;padding:9px 0}
+.exsteps li+li{border-top:1px solid var(--line)}
+.exsteps li::before{content:counter(st);width:28px;height:28px;border-radius:50%;background:var(--surface);color:var(--accent-text);display:grid;place-items:center;font-size:13px;font-weight:800;margin-top:-2px}
 .exmus{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin-top:14px}
 .exmus h4{margin:0 0 4px;color:var(--dim-2);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
 .exmus p{margin:0;font-size:15px;line-height:1.5;text-transform:capitalize}
@@ -104,7 +108,7 @@ function render(){
   let h=`<div class="extop"><div class="exhead"><button class="pbtn" id="exBack" aria-label="Back">‹</button><h2>${esc(ex.n)}</h2></div>
     <div class="extabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${X.tab===k}" class="${X.tab===k?'on':''}" data-t="${k}">${l}</button>`).join('')}</div></div>`;
   h+=X.tab==='about'?about(ex):X.tab==='records'?records(ex):X.tab==='stats'?stats(ex):history(ex);
-  view.innerHTML=h;wire();
+  view.dataset.key=ex.key||'';view.innerHTML=h;wire();
 }
 function about(ex){
   const key=ex.key,url=(S.video||{})[key]||ex.v,vid=url?ytId(url):null;
@@ -112,6 +116,8 @@ function about(ex){
       <a class="exlink" href="${esc(url)}" target="_blank" rel="noopener">Open on YouTube</a>`
     :`<a class="exlink" href="${esc(ytSearch(ex.n))}" target="_blank" rel="noopener">Search on YouTube</a>`;
   const d=ex.d||(EX[key]||{}).d;if(d)h+=`<p class="exdesc">${esc(d)}</p>`;
+  const st=stepsOf(key,ex.n);
+  if(st)h+=`<div class="exsec"><h3>How to</h3><ol class="exsteps">${st.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`;
   const mu=MU[key]||[];
   if(mu.length)h+=`<div class="exsec"><h3>Muscles worked</h3>${muscleMap([key])}
     <div class="exmus"><div><h4>Primary</h4><p>${mu.slice(0,2).map(esc).join('<br>')}</p></div><div><h4>Secondary</h4><p>${mu.slice(2).map(esc).join('<br>')||'–'}</p></div></div></div>`;
@@ -123,6 +129,14 @@ function about(ex){
   if(String(key).startsWith('u_')&&S.customEx&&S.customEx[key])h+=`<button class="btn-s" style="width:100%;margin-top:20px" id="exDel">Remove from library</button>`;
   return h;
 }
+/* step-by-step text: by EX key, else by plain name with counts/sides stripped ("5X Clean (R)" → "Clean") */
+function stepsOf(key,name){const ST=window.BLOCK_STEPS||{};if(ST[key])return ST[key];
+  if(/^(ig_|u_)/.test(String(key)))return null;/* own clips and exercises: no guessed steps */
+  const n=String(name||'').replace(/^\s*[\d\-–\/]+\s*x\s+/i,'').replace(/\s*\([^)]*\)\s*$/,'').trim().toLowerCase();
+  const hit=Object.keys(ST).find(k=>k.startsWith('x:')&&k.slice(2).toLowerCase()===n);if(hit)return ST[hit];
+  const part=Object.keys(ST).filter(k=>k.startsWith('x:')).sort((a,b)=>b.length-a.length).find(k=>n.includes(k.slice(2).toLowerCase()));
+  return part?ST[part]:null;}
+window.blockSteps=stepsOf;
 function similar(key,name){
   const mu=MU[key]||[],pat=patternOf(name),c=(EX[key]||{}).c;
   const score=k=>{if(k===key||!EX[k])return 0;const m=MU[k]||[];let s=0;

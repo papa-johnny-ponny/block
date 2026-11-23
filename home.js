@@ -42,8 +42,23 @@ const css=`
 .hdelta{color:var(--dim-2);font-size:12px;margin:8px 2px 0}
 .hbars{margin:22px 0 0}
 .hbars h4,.hlist h4{margin:0 0 4px;color:var(--dim);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
-.hbars .pbar span{width:96px}
+.hbars .pbar span{width:112px}
 .hbars .pbar i em{background:var(--accent)}
+.hlhead{display:flex;align-items:center;gap:10px}
+.hlhead .hlt{display:flex;gap:4px;flex:1}
+.hlhead .hlt button{padding:5px 10px;border-radius:999px;font-size:13px;font-weight:600;color:var(--dim);background:transparent}
+.hlhead .hlt button.on{background:var(--surface);color:#fff}
+.hlx{font-size:13px;font-weight:600;color:var(--accent-text);padding:6px 0}
+.hlsub{margin:6px 0 0;color:var(--dim-2);font-size:13px}
+.hlcar{display:flex;align-items:flex-start;transition:height .25s ease;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -20px;overscroll-behavior-x:contain}
+.hlcar::-webkit-scrollbar{display:none}
+.hlcar>section{flex:0 0 100%;scroll-snap-align:start;padding:0 20px;box-sizing:border-box}
+.hlex{margin:4px 0 10px 122px;font-size:13px;color:var(--dim);line-height:1.6}
+.hlex div{display:flex;justify-content:space-between;gap:10px}
+.hlex div b{color:var(--dim-2);font-weight:600}
+.hldots{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.hldots i{width:6px;height:6px;border-radius:50%;background:var(--surface-2)}
+.hldots i.on{background:var(--accent)}
 .hstreak{margin:22px 2px 0;padding-top:14px;border-top:1px solid var(--line);color:var(--dim);font-size:15px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .hstreak b{color:var(--accent);font-size:22px;font-weight:800;margin-right:4px}
 
@@ -107,9 +122,7 @@ renderOverview=function(){
   const sets=recs.filter(r=>!r.check&&!r.warm&&r.score==null).length;
   const time=ss.reduce((a,s)=>a+durOf(s),0)/1000;
   const sc=recs.filter(r=>r.score!=null);
-  const pc={};PATTERNS.forEach(([p])=>pc[p]=0);
-  recs.forEach(r=>{if(r.score!=null||r.warm)return;const p=patternOf(r.name);if(p)pc[p]++;});
-  const max=Math.max(1,...Object.values(pc)),st=streak();
+  const st=streak();
   const delta=ps==null?'':(ss.length-ps===0?'Same number of sessions as the period before':`${ss.length-ps>0?'+':''}${ss.length-ps} sessions vs the previous ${OVP} days`);
   const h=Math.floor(time/3600),m=Math.round(time%3600/60);
   const tTxt=time>=3600?`${h}:${String(m).padStart(2,'0')}<small>h</small>`:`${m}<small>min</small>`;
@@ -117,10 +130,62 @@ renderOverview=function(){
     <div class="chips">${PERIODS.map(([v,l])=>`<button data-p="${v}" class="${String(v)===String(OVP)?'on':''}">${l}</button>`).join('')}</div>
     <div class="hstats"><div><b>${ss.length}</b><span>Sessions</span></div><div><b>${sets}</b><span>Sets</span></div><div><b>${tTxt}</b><span>Training</span></div></div>
     ${delta?`<p class="hdelta">${delta}${sc.length?` · ${sc.length} score${sc.length===1?'':'s'} logged`:''}</p>`:''}
-    <div class="hbars"><h4>Load by pattern</h4>${Object.entries(pc).map(([p,n])=>`<div class="pbar"><span>${p}</span><i><em style="width:${n/max*100}%"></em></i><b>${n}</b></div>`).join('')}</div>
+    ${loadHTML(recs)}
     <div class="hstreak"><span><b>${st.n}</b>week${st.n===1?'':'s'} streak</span><span>This week ${st.thisW} of ${st.goal}</span></div>`;
   box.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>{const v=b.dataset.p;OVP=isNaN(+v)?v:+v;renderOverview();});
+  wireLoad(box);
 };
+
+/* ----- load by pattern / plane: swipe between the two, expand to see the exercises behind each bar ----- */
+const PAT2=[
+  ['Carry',/carry|farmer|suitcase|yoke/],
+  ['Rotation',/twist|chop|rotat|grappler|windmill|russian|pallof|turn\b/],
+  ['Hinge',/pull[\s-]?through|swing|deadlift|\brdl\b|hinge|clean|snatch|good morning|hyper|back ext|jefferson|hip thrust|glute bridge|high pull|nordic|leg curl|hamstring curl|kb overs|rack pull/],
+  ['Lunge',/lunge|split squat|bulgarian|step[\s-]?up|cossack|skater|pistol|single leg squat/],
+  ['Squat',/squat|thruster|zercher|leg press|wall sit|leg ext/],
+  ['Vertical push',/overhead|\bohp\b|military|push press|jerk|handstand|hspu|pike push|landmine press|z press|\bdips?\b/],
+  ['Horizontal push',/bench|push[\s-]?ups?|pushup|floor press|chest press|\bfly|press/],
+  ['Vertical pull',/pull[\s-]?ups?|chin|pulldown|muscle[\s-]?up|rope climb|pullover/],
+  ['Horizontal pull',/\brows?\b|face pull|rear delt|reverse fly|inverted/],
+  ['Arms',/curl|tricep|skull|extension/]];
+const PAT_ORDER=['Squat','Lunge','Hinge','Horizontal push','Vertical push','Horizontal pull','Vertical pull','Carry','Rotation','Arms','Other'];
+const PLANE=[['Transverse',/twist|chop|rotat|grappler|windmill|russian|pallof|turn\b|\bfly|face pull|throw|slam|landmine/],
+  ['Frontal',/lateral|side|cossack|skater|abduct|adduct|copenhagen|suitcase|jack|carioca|straddle|offset/]];
+const pat2=n=>{n=(n||'').toLowerCase();for(const[p,re]of PAT2)if(re.test(n))return p;return'Other';};
+const plane=n=>{n=(n||'').toLowerCase();for(const[p,re]of PLANE)if(re.test(n))return p;return'Sagittal';};
+let LOADX=false,LOADPG=0;
+window.BLOCK_PATTERNS=PAT_ORDER.slice(0,10);
+function loadHTML(recs){
+  const work=recs.filter(r=>r.score==null&&!r.warm&&!r.check);
+  const group=(fn,order,keep)=>{const g={};order.forEach(k=>g[k]={n:0,ex:{}});
+    work.forEach(r=>{const k=fn(r);g[k].n++;g[k].ex[r.name]=(g[k].ex[r.name]||0)+1;});
+    return order.filter(k=>g[k].n||keep.includes(k)).map(k=>[k,g[k]]);};
+  const page=rows=>{const max=Math.max(1,...rows.map(r=>r[1].n));
+    return rows.map(([k,v])=>`<div class="pbar"><span>${k}</span><i><em style="width:${v.n/max*100}%"></em></i><b>${v.n}</b></div>`
+      +(LOADX&&v.n?`<div class="hlex">${Object.entries(v.ex).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<div><span>${esc(n)}</span><b>${c} set${c===1?'':'s'}</b></div>`).join('')}</div>`:'')).join('');};
+  const tag=(r,f)=>(EX[r.ex]||{})[f];
+  const P=group(r=>tag(r,'pat')||pat2(r.name),PAT_ORDER,PAT_ORDER.slice(0,9)),L=group(r=>tag(r,'pl')||plane(r.name),['Sagittal','Frontal','Transverse'],['Sagittal','Frontal','Transverse']);
+  return `<div class="hbars"><div class="hlhead"><div class="hlt" role="tablist">${['Pattern','Plane'].map((t,i)=>`<button role="tab" data-pg="${i}" class="${LOADPG===i?'on':''}" aria-selected="${LOADPG===i}">${t}</button>`).join('')}</div>
+    ${work.length?`<button class="hlx" aria-expanded="${LOADX}">${LOADX?'Collapse':'Expand'}</button>`:''}</div>
+    <p class="hlsub">Work sets logged in this period. Warm-ups and scored rounds are left out. Swipe to see ${LOADPG?'patterns':'planes'}.</p>
+    <div class="hlcar"><section aria-label="By movement pattern">${page(P)}</section><section aria-label="By movement plane">${page(L)}</section></div>
+    <div class="hldots" aria-hidden="true"><i class="${LOADPG?'':'on'}"></i><i class="${LOADPG?'on':''}"></i></div></div>`;
+}
+function wireLoad(box){
+  const car=box.querySelector('.hlcar');if(!car)return;
+  let hold=0;
+  const go=(i,smooth)=>{const x=i*car.clientWidth;hold=Date.now()+600;car.scrollTo({left:x,behavior:smooth?'smooth':'auto'});
+    setTimeout(()=>{if(Math.abs(car.scrollLeft-x)>2)car.scrollLeft=x;},smooth?450:30);};
+  requestAnimationFrame(()=>go(LOADPG,false));
+  const fit=i=>{const sec=car.children[i];if(sec)car.style.height=sec.offsetHeight+'px';};
+  requestAnimationFrame(()=>fit(LOADPG));
+  const mark=i=>{LOADPG=i;fit(i);box.querySelectorAll('.hlt button').forEach((b,j)=>{b.classList.toggle('on',j===i);b.setAttribute('aria-selected',j===i);});
+    box.querySelectorAll('.hldots i').forEach((d,j)=>d.classList.toggle('on',j===i));
+    const sub=box.querySelector('.hlsub');if(sub)sub.textContent=sub.textContent.replace(/Swipe to see \w+\./,`Swipe to see ${i?'patterns':'planes'}.`);};
+  car.addEventListener('scroll',()=>{if(Date.now()<hold)return;const i=Math.round(car.scrollLeft/Math.max(1,car.clientWidth));if(i!==LOADPG)mark(i);},{passive:true});
+  box.querySelectorAll('.hlt button').forEach(b=>b.onclick=()=>{const i=+b.dataset.pg;mark(i);go(i,true);});
+  const x=box.querySelector('.hlx');if(x)x.onclick=()=>{LOADX=!LOADX;renderOverview();};
+}
 
 /* ----- health: a single row until there is data ----- */
 const _renderHealth=renderHealth;

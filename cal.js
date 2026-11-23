@@ -43,15 +43,16 @@ function queueOf(c){
 }
 /* plain-text overview for the calendar event: exercise · sets × reps · load */
 function detailOf(prog,key,items){
-  const L=[];
+  const L=[];let head=false;
   for(const{item,idx,sp}of items){
-    if(item.grp){if(L.length)L.push('');L.push(item.grp.toUpperCase());continue;}
+    if(item.grp){if(L.length)L.push('');L.push(item.grp.toUpperCase());head=true;continue;}
+    if(L.length&&!head)L.push('');head=false;
     const k=logKey(prog,key,idx),ex=exFor(item,k),D=densOf(item,k),bits=[];
     if(D)bits.push(D.clock?`${D.clock} min`:'for time');
     else if(sp&&sp.s)bits.push(parse(sp.s).label.replace(/^1 sets\b/,'1 set'));
-    if(!D&&sp&&sp.p!=null){const kg=loadFor(ex.key,sp.p);bits.push(kg?`${kg} kg`:`${sp.p} %`);}
+    if(!D&&sp&&sp.p!=null){const kg=loadFor(ex.key,sp.p);bits.push(kg?`${kg} kg`:`${sp.p}%`);}
     if(sp&&sp.nt&&sp.nt.length<=40)bits.push(sp.nt);
-    L.push(`• ${ex.n}${bits.length?' — '+bits.join(' · '):''}`);}
+    L.push(ex.n);if(bits.length)L.push(bits.join(' • '));}
   return L.join('\n');
 }
 /* keep the queue, program name and last-trained time current on every save */

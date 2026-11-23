@@ -55,9 +55,9 @@ const css=`
 .lgsg b{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
 .lgsg span{color:var(--dim);font-size:12px}
 .lgsum .mmap{margin-top:14px}
-#lgRest{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translate(-50%,140%);width:min(420px,calc(100% - 32px));z-index:60;
-  display:flex;align-items:center;gap:8px;padding:8px;border-radius:999px;background:#1c1c1f;border:1px solid var(--line);overflow:hidden;transition:transform .25s ease}
-#lgRest.on{transform:translate(-50%,0)}
+#lgRest{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translate(-50%,calc(100% + 40px + env(safe-area-inset-bottom,0px)));visibility:hidden;width:min(420px,calc(100% - 32px));z-index:60;
+  display:flex;align-items:center;gap:8px;padding:8px;border-radius:999px;background:#1c1c1f;border:1px solid var(--line);overflow:hidden;transition:transform .25s ease,visibility 0s .25s}
+#lgRest.on{transform:translate(-50%,0);visibility:visible;transition:transform .25s ease}
 #lgRest .bar{position:absolute;inset:0;width:0;background:var(--accent-soft);pointer-events:none}
 #lgRest>*:not(.bar){position:relative}
 #lgRest .rt{flex:1;display:flex;flex-direction:column;align-items:center;line-height:1.05}
@@ -298,7 +298,7 @@ function summary(){
 function itemOf(idx){return LG.B.blocks.flatMap(b=>b.items).find(x=>x.idx===idx);}
 function wire(){
   const q=id=>document.getElementById(id);
-  q('lgX').onclick=logClose;
+  q('lgX').onclick=askClose;
   q('lgGuide').onclick=()=>{const p=LG.prog,k=LG.key;restOff();playOpen(p,k,'log',true);};
   q('lgFin').onclick=q('lgDone').onclick=finish;
   view.querySelectorAll('[data-timer]').forEach(b=>b.onclick=()=>{const bi=+b.dataset.timer,p=LG.prog,k=LG.key;restOff();playOpen(p,k,'log',true);plSetBlock(bi);});
@@ -306,6 +306,7 @@ function wire(){
     const x=itemOf(+c.dataset.idx),k=logKey(LG.prog,LG.key,x.idx),e=entry(LG.prog,LG.key,x.idx),ex=exFor(x.item,k);
     const cc={prog:LG.prog,sessKey:LG.key,idx:x.idx,sp:x.sp,item:x.item};
     wireRows(LG,x,c,render);
+    if(window.exOpen)c.querySelectorAll('.lgh .th, .lgh b').forEach(el=>{el.style.cursor='pointer';el.onclick=()=>exOpen(ex);});
     c.querySelectorAll('[data-a]').forEach(b=>{const a=b.dataset.a;if(b.tagName==='INPUT')return;
       if(a==='info')b.onclick=()=>window.exOpen?exOpen(ex):openSheet(ex,cc);
       else if(a.startsWith('p:'))b.onclick=()=>{openSheet(ex,cc);SHP=a.slice(2);renderSheet();};
@@ -342,6 +343,21 @@ function finish(){
         const kg=LG.v[x.idx+'|'+n+'|kg']??dd.kg,reps=LG.v[x.idx+'|'+n+'|reps']??dd.reps;
         recordSet(LG.prog,LG.key,x.idx,ex,{set:n,kg,reps},LG.sid);settle(LG,x);});save();finishNow();}
     else if(a==='leave')finishNow();};
+}
+/* × on a started workout: keep going, finish, or end it (ending clears the open session so the clock restarts at 0) */
+function askClose(){
+  const logged=S.sets.filter(r=>r.sid===LG.sid&&!r.check).length,el=fmtT((Date.now()-LG.start)/1000);
+  const d=document.createElement('div');d.className='lgdlg';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');
+  d.innerHTML=`<div><h3>End this workout?</h3><p>${logged?`You have logged ${logged} set${logged===1?'':'s'} in ${el}.`:`Nothing is logged yet. The clock is at ${el} and starts from 0 next time.`}</p>
+    <button class="go" data-d="x">Keep training</button>${logged?'<button data-d="fin">Finish and save</button>':''}<button data-d="end">${logged?'Discard workout':'End workout'}</button></div>`;
+  document.body.append(d);
+  d.onclick=ev=>{const a=ev.target.dataset&&ev.target.dataset.d;if(!a&&ev.target!==d)return;d.remove();
+    if(a==='fin')finish();
+    else if(a==='end'){const sid=LG.sid;(S._del=S._del||{})['sess|'+sid]=Date.now();
+      S.sessions=S.sessions.filter(x=>x.id!==sid);
+      S.sets=S.sets.filter(r=>{if(r.sid!==sid)return true;S._del[r.sid+'|'+r.t+'|'+r.idx]=Date.now();return false;});
+      LG.B.blocks.forEach(b=>b.items.forEach(x=>{if(!entry(LG.prog,LG.key,x.idx).skip)settle(LG,x);}));
+      save();logClose();}};
 }
 function finishNow(){const p=LG.prog,k=LG.key,from=LG.from;restOff();
   playOpen(p,k,from,true);plFinishView();
@@ -528,7 +544,7 @@ paintItems=function(box,prog,sessKey,items){
         [o[ri],o[j]]=[o[j],o[ri]];S.order[sk]=o;save();renderSession();});
       w.appendChild(c);}
     else{const b=document.createElement('button');b.className='xr'+(e.done?' done':'');b.innerHTML=exRowHTML(prog,sessKey,x,60,true,right);
-      b.onclick=ev=>{openSheet(ex,{prog,sessKey,idx,sp,item});if(ev.target.closest('[data-eq]')){SHP='eq';renderSheet();}};w.appendChild(b);}
+      b.onclick=ev=>{if(ev.target.closest('.th')&&window.exOpen)return exOpen(ex);openSheet(ex,{prog,sessKey,idx,sp,item});if(ev.target.closest('[data-eq]')){SHP='eq';renderSheet();}};w.appendChild(b);}
     box.appendChild(w);
   });
   if(!edit){const d=document.createElement('div');d.innerHTML=addonsHTML(prog,sessKey);
@@ -541,13 +557,15 @@ slDetail=function(P,d){
   const items=sessionOf(P.id,d.key).items;let h='';
   for(const x of items){
     if(x.item.grp){h+=`<p class="sgh" style="margin:14px 0 2px">${esc(x.item.grp)}</p>`;continue;}
-    h+=`<div class="xr">${exRowHTML(P.id,d.key,x,44,false,'')}</div>`;}
+    h+=`<button class="xr" data-pv="${x.idx}" aria-label="Preview ${esc(exFor(x.item,logKey(P.id,d.key,x.idx)).n)}">${exRowHTML(P.id,d.key,x,44,false,'<span class="chev">›</span>')}</button>`;}
   return h+addonsHTML(P.id,d.key,'Grip pairing · add if you want')
     +`<div class="acts"><button class="btn-s on" data-go="start">Start session</button><button class="btn-s" data-go="open">Details</button></div>`;
 };
 const _slSet=slSet;
 slSet=function(P,d,w,open){_slSet(P,d,w,open);const panel=w.querySelector('.sdet');
-  if(open&&panel)wireAddons(panel,P.id,d.key,()=>{panel.innerHTML='';slSet(P,d,w,true);});};
+  if(open&&panel){wireAddons(panel,P.id,d.key,()=>{panel.innerHTML='';slSet(P,d,w,true);});
+    panel.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{const it=sessionOf(P.id,d.key).items.find(y=>y.idx===+b.dataset.pv);
+      if(it&&window.exOpen)exOpen(exFor(it.item,logKey(P.id,d.key,it.idx)));});}};
 
 /* collapsed sessions: how many exercises and roughly how long */
 const _rslC=renderSessionList;
