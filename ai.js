@@ -19,7 +19,7 @@ const css=`
 .aiout{margin-top:10px}
 .aipick{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;margin-top:8px;padding:12px 14px;border-radius:12px;background:var(--bg,#000);border:1px solid var(--line);color:#fff;font:inherit;text-align:left;cursor:pointer}
 .aipick small{display:block;color:var(--dim);font-size:13px;margin-top:2px}
-.aiset{margin:26px 0 0}
+.aiset{margin:0}
 .aiset h3{margin:0 0 4px;font-size:18px}
 .aiset .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .aiset .seg{display:flex;gap:8px;margin-top:10px}
@@ -47,19 +47,20 @@ async function claudeClient(key){
   if(!SDK){const m=await import('https://esm.sh/@anthropic-ai/sdk@0.136.0');SDK=m.default||m.Anthropic;}
   return new SDK({apiKey:key,dangerouslyAllowBrowser:true});}
 /* one request: text back, or parsed JSON when a schema is given */
-async function ask({system,prompt,schema,effort='low',maxTokens=4000}){
+async function ask({system,prompt,messages,schema,effort='low',maxTokens=4000}){
+  const msgs=messages&&messages.length?messages:[{role:'user',content:prompt}];
   const c=cfg();if(!c.key)throw new Error('Add an API key in Settings → AI coach first.');
   if(c.provider==='openai'){
     const res=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
       headers:{'Content-Type':'application/json',Authorization:'Bearer '+c.key},
-      body:JSON.stringify({model:c.omodel||'gpt-5-mini',messages:[{role:'system',content:system},{role:'user',content:prompt}],
+      body:JSON.stringify({model:c.omodel||'gpt-5-mini',messages:[{role:'system',content:system},...msgs],
         ...(schema?{response_format:{type:'json_schema',json_schema:{name:'answer',strict:true,schema}}}:{})})});
     const j=await res.json().catch(()=>({}));
     if(!res.ok)throw new Error((j.error&&j.error.message)||`OpenAI error ${res.status}`);
     const text=((j.choices||[])[0]||{}).message?.content||'';
     return schema?JSON.parse(text):text;}
   const client=await claudeClient(c.key),model=c.model||'claude-opus-5-5';
-  const req={model,max_tokens:maxTokens,system,messages:[{role:'user',content:prompt}],
+  const req={model,max_tokens:maxTokens,system,messages:msgs,
     output_config:{effort,...(schema?{format:{type:'json_schema',schema}}:{})}};
   let r;
   try{
@@ -97,7 +98,7 @@ const errHTML=e=>`<p class="dim">${esc2(e.message||e)}</p>`;
 
 /* ---------- settings ---------- */
 function settingsHTML(){const c=cfg(),p=c.provider||'claude';
-  return`<h3>AI coach</h3><p class="sub" style="margin:0">Connect Claude or ChatGPT with an API key from console.anthropic.com or platform.openai.com. The key stays on this device and is only sent to the provider you pick. A chat subscription login can't be used by other apps, so an API key is the way in.</p>
+  return`<p class="grp">AI coach</p><p class="sub" style="margin:0">Connect Claude or ChatGPT with an API key from console.anthropic.com or platform.openai.com. The key stays on this device and is only sent to the provider you pick. A chat subscription login can't be used by other apps, so an API key is the way in.</p>
     <div class="seg"><button data-p="claude" class="${p==='claude'?'on':''}">Claude</button><button data-p="openai" class="${p==='openai'?'on':''}">ChatGPT</button></div>
     <input id="aiKey" type="password" autocomplete="off" placeholder="${p==='claude'?'sk-ant-…':'sk-…'}" value="${esc2(c.key||'')}" aria-label="API key">
     ${p==='claude'?`<select id="aiModel" aria-label="Model">${CLAUDE_MODELS.map(([v,l])=>`<option value="${v}" ${v===(c.model||'claude-opus-5-5')?'selected':''}>${l}</option>`).join('')}</select>`
@@ -250,7 +251,7 @@ function voiceLog(said,stat){const p=parseSpoken(said);
   stat(`Logged ${name}: ${p.kg!=null?p.kg+' kg × ':''}${p.reps??'–'}${p.rir!=null?` · RIR ${p.rir}`:''}`);}
 let REC=null;
 function mountMic(){if(!SR)return;const x=document.getElementById('lgX');if(!x||document.getElementById('aiMic'))return;
-  const b=document.createElement('button');b.id='aiMic';b.className='pbtn';b.setAttribute('aria-label','Log a set by voice');b.textContent='🎙';
+  const b=document.createElement('button');b.id='aiMic';b.className='pbtn';b.setAttribute('aria-label','Log a set by voice');b.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';b.style.cssText='display:grid;place-items:center';
   x.parentElement.insertBefore(b,x.nextSibling);
   let tip=document.getElementById('aiMicStat');if(!tip){tip=document.createElement('p');tip.id='aiMicStat';tip.setAttribute('role','status');document.body.append(tip);}
   let tm=null;const stat=t=>{const el=document.getElementById('aiMicStat');if(!el)return;el.textContent=t;el.classList.add('on');clearTimeout(tm);tm=setTimeout(()=>el.classList.remove('on'),4500);};

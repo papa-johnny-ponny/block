@@ -67,7 +67,7 @@ async function upload(list,out){const Y=window.BLOCK_SYNC;
   out.textContent=`Uploaded ${ok} packs.`;await fromServer().then(n=>{if(n)repaint();}).catch(()=>{});}
 async function mountSection(){const v=document.getElementById('v-settings');if(!v)return;
   let box=document.getElementById('packSet');
-  if(!box){box=document.createElement('div');box.id='packSet';box.style.margin='26px 0 0';
+  if(!box){box=document.createElement('div');box.id='packSet';
     const anchor=document.getElementById('aiSet')||document.getElementById('resetAll');v.insertBefore(box,anchor);}
   const signed=window.BLOCK_SYNC&&BLOCK_SYNC.signedIn();
   box.innerHTML=`<p class="grp">Program packs</p><p class="sub" style="margin:0">${loaded.size?`${loaded.size} packs on this device.`:signed?'No packs downloaded yet.':'Sign in under Sync to load your bought programs. They are kept private, not in the public app.'}</p>

@@ -39,6 +39,7 @@ const css=`
 .lgv span{color:var(--dim);font-size:12px;flex:none}
 .lgr:not(.done) .lgv input{color:var(--dim)}
 .lgdot{width:30px;height:36px;display:grid;place-items:center;color:var(--dim);font-size:18px;line-height:1}
+.lgflags{padding:0 0 10px 44px;margin-top:-4px;color:var(--dim);font-size:12px;line-height:1.4}
 .lgmenu{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:4px 0 12px 44px}
 .lgmenu span{color:var(--dim);font-size:12px;margin-right:2px}
 .lgmenu button{background:var(--surface-2);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:600}
@@ -191,11 +192,9 @@ function rowsHTML(C,x,ex,P){
       <label class="lgv"><input type="number" inputmode="decimal" data-f="kg" value="${fmtKg(kg)}" placeholder="${esc(kgPh)}" aria-label="kg"><span>${bw?'+kg':'kg'}</span></label>
       <label class="lgv"><input type="number" inputmode="numeric" data-f="reps" value="${reps==null?'':reps}" placeholder="${esc(rPh)}" aria-label="${unit}"><span>${unit}</span></label>
       <button class="lgdot" data-a="menu" aria-label="More for this set" aria-expanded="${open}">⋮</button></div>`;
-    if(open){s+=`<div class="lgmenu">`;
-      if(r&&!w)s+=`<span>Reps in reserve</span>${[0,1,2,3].map(v=>`<button data-a="rir" data-v="${v}" class="${r.rir===v?'on':''}">${v===3?'3+':v}</button>`).join('')}`;
-      if(!r&&(last||w))s+=`<button class="del" data-a="rmrow">Remove ${w?'warm-up':'set'}</button>`;
-      if(r)s+=`<button class="del" data-a="log">Undo this ${w?'warm-up':'set'}</button>`;
-      s+=`</div>`;}
+    if(r){const f=[r.drop?'drop set':'',r.max?'max reps':'',r.fail?'failed':'',r.rpe!=null?`RPE ${r.rpe}`:'',r.rir!=null?`RIR ${r.rir===3?'3+':r.rir}`:'',r.vid?'video':'',r.note?`“${r.note}”`:''].filter(Boolean);
+      if(f.length)s+=`<div class="lgflags">${f.map(esc).join(' · ')}</div>`;}
+    void open;void last;
     return s;};
   for(let n=1;n<=nWu;n++)h+=row(n,true);
   for(let n=1;n<=nW;n++)h+=row(n,false);
@@ -213,7 +212,7 @@ function wireRows(C,x,root,redraw){
       const row=b.closest('.lgr,.lgmenu'),id=row?(row.classList.contains('lgr')?row.dataset.row:row.previousElementSibling.dataset.row):null;
       if(a==='addset'){C.extra[x.idx]=(C.extra[x.idx]||0)+1;}
       else if(a==='addwu'){C.wu[x.idx]=(C.wu[x.idx]||0)+1;}
-      else if(a==='menu'){const m=x.idx+'|'+id;C.menu=C.menu===m?null:m;}
+      else if(a==='menu'){setMenu(C,x,id,b,redraw);return;}
       else if(a==='rmrow'){C.menu=null;if(id[0]==='w')C.wu[x.idx]=Math.max(0,(C.wu[x.idx]||0)-1);else C.extra[x.idx]=(C.extra[x.idx]||0)-1;}
       else if(a==='rir'){const r=findRec(C,x,id);if(r){const v=+b.dataset.v;r.rir=r.rir===v?null:v;save();}}
       else if(a==='log'){const r=findRec(C,x,id);C.menu=null;
@@ -226,6 +225,130 @@ function wireRows(C,x,root,redraw){
         settle(C,x);save();}
       redraw();};});
 }
+
+/* ----- set menu (⋮): quick stats, set type, handle set, video, delete ----- */
+const SMCSS=`
+.smenu{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.smrow{position:absolute;left:12px;right:12px;display:grid;grid-template-columns:44px 1fr 1fr 30px;align-items:center;gap:4px;min-height:56px;padding:0 6px;border-radius:18px;background:#26262a;color:#fff}
+.smrow .lgn{margin-left:4px}
+.smrow b{font-size:18px;text-align:right;font-variant-numeric:tabular-nums}.smrow b small{color:var(--dim);font-size:12px;font-weight:500;margin-left:4px}
+.smcard{position:absolute;right:12px;width:min(340px,calc(100% - 24px));border-radius:18px;background:#26262a;color:#fff;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.smcard.wide{left:12px;width:auto}
+.smi{display:flex;align-items:center;gap:14px;width:100%;padding:15px 18px;background:none;border:0;border-top:1px solid rgba(255,255,255,.08);color:#fff;font:inherit;font-size:17px;text-align:left;cursor:pointer}
+.smi:first-child{border-top:0}
+.smi svg{flex:none;color:var(--accent)}.smi.del,.smi.del svg{color:#ff8a80}
+.smi small{display:block;color:var(--dim);font-size:13px;margin-top:2px}
+.smh{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+.smh b{font-size:18px}.smh button{background:none;border:0;color:#fff;font:inherit;font-size:15px;display:flex;align-items:center;gap:6px;cursor:pointer}
+.smh button svg{color:var(--accent)}
+.smbody{padding:16px 18px 18px}
+.smstats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 10px;text-align:center}
+.smstats span{display:block;color:var(--dim);font-size:13px}.smstats b{display:block;font-size:18px;margin-top:4px;font-variant-numeric:tabular-nums}
+.smseg{display:flex;padding:4px;border-radius:14px;background:#000;border:1px solid rgba(255,255,255,.1)}
+.smseg button{flex:1;min-height:44px;border-radius:10px;border:0;background:none;color:var(--dim);font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+.smseg button.on{background:#fff;color:#000}
+.smline{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid rgba(255,255,255,.08)}
+.smline:first-child{border-top:0;padding-top:0}
+.smline>span{font-size:16px}.smline>span small{display:block;color:var(--dim);font-size:12px}
+.smopts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.smopts button{min-width:40px;min-height:36px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:none;color:#fff;font:inherit;font-size:14px;cursor:pointer}
+.smopts button.on{background:var(--accent);border-color:var(--accent);color:#000}
+.sminput{display:block;width:100%;box-sizing:border-box;padding:11px 14px;border-radius:12px;background:#000;color:#fff;border:1px solid rgba(255,255,255,.12);font:inherit;font-size:16px}
+.smhint{color:var(--dim);font-size:13px;margin:10px 0 0}
+.smvid{width:100%;border-radius:12px;margin-top:10px;background:#000}
+@media (prefers-reduced-motion:no-preference){.smcard{animation:smin .18s ease-out}}
+@keyframes smin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}`;
+{const st=document.createElement('style');st.textContent=SMCSS;document.head.appendChild(st);}
+const IC={
+  stats:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="11" width="4" height="9" rx="1.5"/><rect x="10" y="5" width="4" height="15" rx="1.5"/><rect x="16" y="14" width="4" height="6" rx="1.5"/></svg>',
+  type:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M4 9l5-5M15 20l5-5M3 12l3-3M12 21l3-3"/></svg>',
+  edit:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>',
+  video:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M17 10l4-2.5v9L17 14z"/></svg>',
+  del:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  back:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>'};
+/* videos stay on this device (IndexedDB), keyed by the set */
+const VDB=()=>new Promise((ok,no)=>{const q=indexedDB.open('block-media',1);q.onupgradeneeded=()=>q.result.createObjectStore('videos');q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error);});
+const vKey=r=>r.sid+'|'+r.t+'|'+r.idx;
+async function vPut(r,blob){const db=await VDB();await new Promise((ok,no)=>{const t=db.transaction('videos','readwrite');t.objectStore('videos').put(blob,vKey(r));t.oncomplete=ok;t.onerror=()=>no(t.error);});}
+async function vGet(r){const db=await VDB();return new Promise((ok)=>{const q=db.transaction('videos').objectStore('videos').get(vKey(r));q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ok(null);});}
+async function vDel(r){try{const db=await VDB();db.transaction('videos','readwrite').objectStore('videos').delete(vKey(r));}catch(e){}}
+function setStats(ex,kg,reps,self){
+  const hist=S.sets.filter(z=>z.ex===ex.key&&!z.warm&&!z.check&&z.score==null&&z!==self&&(+z.kg>0)&&(+z.reps>0));
+  const f=v=>v==null||!isFinite(v)?'–':(Math.round(v*10)/10).toString();
+  const e1=kg&&reps?(reps===1?kg:epley(kg,reps)):null;
+  const same=hist.filter(z=>+z.kg===+kg),best1=Math.max(0,...hist.map(z=>+z.kg)),best8=Math.max(0,...hist.filter(z=>+z.reps>=8).map(z=>+z.kg));
+  const rm=(S.max[ex.key]&&S.max[ex.key].value)||(typeof RM_ALIAS==='object'&&RM_ALIAS[ex.key]&&S.max[RM_ALIAS[ex.key]]&&S.max[RM_ALIAS[ex.key]].value)||Math.max(0,...hist.map(z=>epley(+z.kg,+z.reps)));
+  const W=(typeof hkSeries==='function'?hkSeries('weight'):[]),bw=W.length?W[W.length-1][1]:null;
+  const pct=(a,b)=>a&&b?`${Math.round(a/b*100)} %`:'–';
+  return[['Estimated 1RM',e1?`${f(e1)} kg`:'–'],['Rep PR at this weight',same.length?`${Math.max(...same.map(z=>+z.reps))} reps`:'–'],
+    ['Average at this weight',same.length?`${f(same.reduce((a,z)=>a+ +z.reps,0)/same.length)} reps`:'–'],
+    ['% of 1RM',pct(kg,rm)],['% of heaviest set',pct(kg,best1)],['% of best 8-rep set',pct(kg,best8)],['× bodyweight',kg&&bw?`${f(kg/bw)} ×`:'–']];}
+function setMenu(C,x,id,btn,redraw){
+  const k=logKey(C.prog,C.key,x.idx),ex=exFor(x.item,k),w=id[0]==='w',n=+id.replace('w',''),bw=isBW(ex),unit=unitOf(x.sp);
+  const rowEl=btn.closest('.lgr'),rect=rowEl.getBoundingClientRect();
+  const val=f=>{const r=findRec(C,x,id);if(r)return r[f];const i=rowEl.querySelector(`[data-f=${f}]`);if(!i)return null;return numOf(i.value||(/^\d+(\.\d+)?$/.test(i.placeholder)?i.placeholder:''));};
+  const ov=document.createElement('div');ov.className='smenu';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',`Set ${n}`);
+  document.body.append(ov);
+  const close=()=>{ov.remove();redraw();};
+  ov.onclick=e=>{if(e.target===ov)close();};
+  const onKey=e=>{if(e.key==='Escape'){document.removeEventListener('keydown',onKey);close();}};document.addEventListener('keydown',onKey);
+  const top0=Math.max(12,Math.min(rect.top,window.innerHeight-420));let top=top0;
+  const head=()=>{const r=findRec(C,x,id),kg=val('kg'),reps=val('reps');
+    return`<div class="smrow" style="top:${top}px"><span class="lgn ${w?'w':''}" style="${r?'background:var(--accent);border-color:var(--accent);color:#000':''}">${w?'W'+n:n}</span>
+      <b>${kg!=null?fmtKg(kg):'–'}<small>${bw?'+kg':'kg'}</small></b><b>${reps!=null?reps:'–'}<small>${unit}</small></b><span></span></div>`;};
+  const pos=()=>`top:${top+66}px;max-height:calc(100dvh - ${top+66+16}px);overflow-y:auto`;
+  const panel=(title,body,wide)=>`${head()}<div class="smcard ${wide?'wide':''}" style="${pos()}"><div class="smh"><b>${title}</b><button data-s="menu">Back ${IC.back}</button></div><div class="smbody">${body}</div></div>`;
+  const needLog='<p class="smhint">Log the set first, then you can mark it.</p>';
+  const view=v=>{const r=findRec(C,x,id);let h;top=v==='menu'?top0:Math.min(top0,Math.max(12,window.innerHeight-600));
+    if(v==='menu'){const last=!w&&!r;h=`${head()}<div class="smcard" style="${pos()}">
+        <button class="smi" data-s="stats">${IC.stats}<span>Quick stats</span></button>
+        <button class="smi" data-s="type">${IC.type}<span>Set type</span></button>
+        <button class="smi" data-s="handle">${IC.edit}<span>Handle set</span></button>
+        <button class="smi" data-s="video">${IC.video}<span>${r&&r.vid?'Video':'Upload video'}</span></button>
+        <button class="smi del" data-s="del">${IC.del}<span>${r?'Delete set':'Remove row'}${!r&&!last&&!w?'<small>Only the last empty row can be removed</small>':''}</span></button></div>`;}
+    else if(v==='stats'){const s=setStats(ex,val('kg'),val('reps'),r);
+      h=panel('Quick stats',`<div class="smstats">${s.map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('')}</div>`,true);}
+    else if(v==='type'){const t=w?'warm':r&&r.drop?'drop':'work';
+      h=panel('Set type',`<div class="smseg">${[['work','Working set'],['warm','Warm-up'],['drop','Drop set']].map(([kk,l])=>`<button data-t="${kk}" class="${t===kk?'on':''}">${l}</button>`).join('')}</div>
+        ${!r&&!w?'<p class="smhint">Warm-up adds a warm-up row. Drop set applies once the set is logged.</p>':''}`,true);}
+    else if(v==='handle'){h=panel('Handle set',r?`
+        <div class="smline"><span>Max / fail</span><div class="smopts"><button data-h="max" class="${r.max?'on':''}">Max reps</button><button data-h="fail" class="${r.fail?'on':''}">Fail</button></div></div>
+        <div class="smline"><span>RPE</span><div class="smopts">${[6,7,7.5,8,8.5,9,9.5,10].map(v=>`<button data-rpe="${v}" class="${r.rpe===v?'on':''}">${v}</button>`).join('')}</div></div>
+        <div class="smline"><span>Reps in reserve</span><div class="smopts">${[0,1,2,3].map(v=>`<button data-rir="${v}" class="${r.rir===v?'on':''}">${v===3?'3+':v}</button>`).join('')}</div></div>
+        <div class="smline" style="display:block"><span>Set comment</span><input class="sminput" id="smNote" style="margin-top:8px" placeholder="e.g. grip slipped on the last rep" value="${esc(r.note||'')}"></div>
+        <div class="smline"><span>Move set<small>down or up</small></span><div class="smopts"><button data-mv="1" aria-label="Move down">↓</button><button data-mv="-1" aria-label="Move up">↑</button></div></div>`:needLog,true);}
+    else if(v==='video'){h=panel('Video',r?`<p class="smhint" style="margin-top:0">Saved on this device only, next to this set.</p>
+        <div id="smVid"></div><label class="btn-s" style="display:block;text-align:center;margin-top:12px;cursor:pointer">${r.vid?'Replace video':'Choose or record a video'}<input type="file" accept="video/*" id="smFile" hidden></label>
+        ${r.vid?'<button class="smi del" data-s="vdel" style="padding-left:0">Remove video</button>':''}`:needLog,true);}
+    ov.innerHTML=h;wireView(v);};
+  const wireView=v=>{const r=findRec(C,x,id);
+    ov.querySelectorAll('[data-s]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const s=b.dataset.s;
+      if(s==='del'){if(r){removeRec(r);vDel(r);settle(C,x);save();close();}
+        else if(w){C.wu[x.idx]=Math.max(0,(C.wu[x.idx]||0)-1);close();}
+        else{const P=parse(x.sp.s),recs=recsOf(C,x).filter(z=>!z.warm&&!z.check&&z.score==null),maxN=recs.reduce((m,z)=>Math.max(m,z.set||0),0);
+          const nW=Math.max(0,P.sets+(C.extra[x.idx]||0),maxN);if(n===nW){C.extra[x.idx]=(C.extra[x.idx]||0)-1;close();}}
+        return;}
+      if(s==='vdel'){if(r){await vDel(r);delete r.vid;save();}view('video');return;}
+      view(s);});
+    if(v==='type')ov.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{const t=b.dataset.t;
+      if(r){if(t==='warm'&&!r.warm){r.warm=true;delete r.drop;r.set=recsOf(C,x).filter(z=>z.warm&&z!==r).reduce((m,z)=>Math.max(m,z.set||0),0)+1;}
+        else if(t!=='warm'){if(r.warm){r.warm=false;r.set=recsOf(C,x).filter(z=>!z.warm&&!z.check&&z.score==null&&z!==r).reduce((m,z)=>Math.max(m,z.set||0),0)+1;}
+          if(t==='drop')r.drop=true;else delete r.drop;}
+        settle(C,x);save();close();return;}
+      if(t==='warm'&&!w){C.wu[x.idx]=(C.wu[x.idx]||0)+1;close();return;}
+      view('type');});
+    if(v==='handle'&&r){
+      ov.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{const f=b.dataset.h;r[f]=!r[f];if(!r[f])delete r[f];save();view('handle');});
+      ov.querySelectorAll('[data-rpe]').forEach(b=>b.onclick=()=>{const v2=+b.dataset.rpe;if(r.rpe===v2)delete r.rpe;else{r.rpe=v2;r.rir=Math.max(0,Math.min(3,Math.round(10-v2)));}save();view('handle');});
+      ov.querySelectorAll('[data-rir]').forEach(b=>b.onclick=()=>{const v2=+b.dataset.rir;r.rir=r.rir===v2?null:v2;save();view('handle');});
+      const ni=ov.querySelector('#smNote');ni.onchange=()=>{const t=ni.value.trim();if(t)r.note=t;else delete r.note;save();};
+      ov.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{const d=+b.dataset.mv,list=recsOf(C,x).filter(z=>!!z.warm===!!r.warm&&!z.check&&z.score==null);
+        const o=list.find(z=>z.set===r.set+d);if(!o)return;const s0=r.set;r.set=o.set;o.set=s0;settle(C,x);save();close();});}
+    if(v==='video'&&r){
+      if(r.vid)vGet(r).then(blob=>{const box=ov.querySelector('#smVid');if(blob&&box){const u=URL.createObjectURL(blob);box.innerHTML=`<video class="smvid" src="${u}" controls playsinline></video>`;}});
+      const fi=ov.querySelector('#smFile');fi.onchange=async()=>{const file=fi.files&&fi.files[0];if(!file)return;
+        try{await vPut(r,file);r.vid=1;save();view('video');}catch(e){const p=document.createElement('p');p.className='smhint';p.textContent='Could not save the video on this device.';ov.querySelector('.smbody').append(p);}};}};
+  view('menu');}
 
 /* ----- open / close the log view ----- */
 function logOpen(prog,key,from){
@@ -250,7 +373,7 @@ function render(){
     <div class="lgtt"><b>${esc(LG.B.title)}</b><span id="lgTime"></span></div>
     <button class="pbtn" id="lgGuide" aria-label="Guided mode" title="Guided mode"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
     <button class="pbtn lgok" id="lgFin" aria-label="Finish session">✓</button></div>
-    <p class="eyebrow" style="margin-top:14px">${esc(LG.B.eyebrow||'').toUpperCase()}</p>`;
+    <p class="eyebrow" style="margin-top:14px">${esc(LG.B.eyebrow||'')}</p>`;
   LG.B.blocks.forEach((b,bi)=>{
     const p=b.pr,timed=p.mode==='clock'||p.mode==='interval';
     if((multi&&b.name!==LG.B.title)||timed)h+=`<div class="lgblk"><div><h3>${esc(b.name)}</h3>${p.mode!=='sets'&&p.mode!=='check'?`<small>${esc(p.label)}</small>`:''}</div>

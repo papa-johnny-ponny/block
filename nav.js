@@ -5,7 +5,13 @@
 const st=document.createElement('style');st.textContent=`
 .tag{text-transform:lowercase;letter-spacing:0;font-size:11px}.tag::first-letter{text-transform:uppercase}
 .slist .e,.sgh,.hrowp .ey,.hcur .ey,.qrow label,.ptab th,.pring .in small,.pside small,.sslab,#lgRest small,.shp h4,.adc h4,.lgsum h4,
-.hbars h4,.hlist h4,.exsec>h4,.exmus h4,.xsec h4,.info h4,.nextc .nlab,.fring span,#plRows.after::before{text-transform:none;letter-spacing:0}
+.hbars h4,.hlist h4,.exsec>h4,.exmus h4,.xsec h4,.info h4,.nextc .nlab,.fring span,#plRows.after::before,
+.eyebrow,.grp,.big.prog h3 .cur,#lgRest small{text-transform:none;letter-spacing:0}
+/* caps stay only on the big white headings */
+#v-home .hsec,#v-home .grp,#homeCal .calhead b,#homeHealth .hkhead b{text-transform:uppercase}
+.grp:not(#v-home .grp){font-size:15px;font-weight:700;color:#fff;margin:0 0 6px}
+.eyebrow{font-size:14px}
+.info h4,.xsec h4,.exsec>h4,.shp h4,.adc h4,.lgsum h4{font-size:13px}
 .slist .e,.sgh,.hrowp .ey,.hcur .ey{font-size:12px}
 .wrap{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}`;
 document.head.appendChild(st);
@@ -28,7 +34,7 @@ show=function(v){
 /* ----- edge swipe ----- */
 const EDGE=28;
 let sw=null;
-const blocked=()=>document.querySelector('.sheet.on, .lgdlg');
+const blocked=()=>document.querySelector('.sheet.on, .lgdlg, .aichat.on');
 document.addEventListener('touchstart',e=>{
   sw=null;if(e.touches.length!==1)return;const t=e.touches[0];
   if(t.clientX>EDGE||blocked())return;

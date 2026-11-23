@@ -40,7 +40,15 @@ const css=`
 .gex small{display:block;margin-top:2px;color:var(--dim);font-size:13px;line-height:1.35}
 .gplain{padding:10px 0;border-bottom:1px solid var(--line);color:var(--dim);font-size:14px}
 .gplain b{color:#fff;font-weight:600}
-.gsw,.gdel{flex:none;width:40px;height:40px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);color:#fff;font-size:17px;cursor:pointer}
+.gsw,.gdel{flex:none;width:42px;height:42px;padding:0;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);color:#fff;display:grid;place-items:center;cursor:pointer}
+.gsw svg,.gdel svg{display:block}
+.gsw.on{background:#fff;color:#000;border-color:#fff}
+.gpick{margin:4px 0 10px;padding:12px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line)}
+.gpick h5{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--dim)}
+.gpick input{display:block;width:100%;box-sizing:border-box;margin:0 0 8px;padding:11px 14px;border-radius:12px;background:#000;color:#fff;border:1px solid var(--line);font:inherit;font-size:16px}
+.gpick .gopt{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:11px 4px;background:none;border:0;border-top:1px solid var(--line);color:#fff;font:inherit;font-size:15px;text-align:left;cursor:pointer}
+.gpick .gopt small{color:var(--dim);font-size:12px;white-space:nowrap}
+.gpick .gopt:first-of-type{border-top:0}
 .gmsg{color:var(--dim);font-size:13px;min-height:18px;margin:8px 0 0}
 .gsum{margin:18px 0 0;padding:14px 16px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);font-size:14px;line-height:1.5;color:var(--dim)}
 .gsum b{color:#fff}
@@ -67,9 +75,9 @@ const st=document.createElement('style');st.textContent=css;document.head.append
 const TIME=[15,20,30,45,60,75].map(t=>[t,`${t} min`]);
 const FOCUS=[['full','Full body'],['upper','Upper'],['lower','Lower'],['push','Push'],['pull','Pull'],
   ['fpush','Push + legs','squat, lunge, press'],['fpull','Pull + hinge','deadlift, row, pull-up'],['core','Core'],['cond','Conditioning']];
-const EQ=[['db','Dumbbells'],['kb','Kettlebell'],['bb','Barbell + rack'],['bar','Pull-up / dip bar'],['rings','Rings'],
+const EQ=[['bw','Bodyweight'],['db','Dumbbells'],['kb','Kettlebell'],['bb','Barbell'],['rack','Squat rack + bench'],['bar','Pull-up / dip bar'],['rings','Rings'],
   ['band','Bands'],['mach','Cables & machines'],['cardio','Bike, rower or ski'],['sb','Sandbag']];
-const EQ_PRE=[['Home',['db','kb','bar','band']],['Gym',['db','kb','bb','bar','rings','band','mach','cardio']],['Kettlebell only',['kb']],['Nothing',[]]];
+const EQ_PRE=[['Home',['bw','db','kb','bar','band']],['Gym',['bw','db','kb','bb','rack','bar','rings','band','mach','cardio']],['Kettlebell only',['kb']],['Bodyweight only',['bw']]];
 const GOAL=[['power','Power','explosive · 3–5 reps'],['strength','Strength','heavy · 4–6 reps'],['muscle','Muscle','8–12 reps'],['endur','Endurance','15–20 reps']];
 const EFF=[['easy','Easy','RPE 6'],['mod','Moderate','RPE 7–8'],['hard','Hard','last set to failure']];
 const FMT=[['straight','Straight sets','one exercise at a time'],['super','Supersets','pairs that don’t compete'],
@@ -85,7 +93,7 @@ const apprOf=o=>o&&o.appr?APPR().find(a=>a.id===o.appr)||null:null;
 function gpOf(o){const g=GP[o.goal],A=apprOf(o);if(!A||!A.gp)return g;
   const x={...g,...A.gp};['s','r'].forEach(k=>{if(!Array.isArray(x[k])||x[k].length<2)x[k]=g[k];});return x;}
 const EXTRA=[['warm','Warm-up'],['fin','Core finisher'],['fresh','Skip what I trained the last 2 days']];
-const DEF={time:30,focus:'full',eq:['db','kb','bar','band'],goal:'muscle',eff:'mod',fmt:'super',avoid:[],warm:true,fin:true,fresh:true,from:[],appr:''};
+const DEF={time:30,focus:'full',eq:['bw','db','kb','bar','band'],goal:'muscle',eff:'mod',fmt:'super',avoid:[],warm:true,fin:true,fresh:true,from:[],appr:''};
 const PDEF={days:3,weeks:8,split:'auto',prog:'double',auto:'on',deload:4,name:''};
 const SPLIT=[['auto','Pick for me'],['full','Full body'],['ul','Upper / lower'],['fpp','Push / pull','Flolyfe, legs included'],['ppl','Push / pull / legs']];
 const PROG=[['double','Double progression','top of the range, then add load'],['setsreps','Sets, then reps','SBS: 3×8 up to 5×12, then add load'],
@@ -119,7 +127,8 @@ function needs(k,e,n){const r=[];
   else if(/kettlebell|\bkb\b|swing|get-?up|windmill|crush curl|suitcase hold/.test(n))r.push('kb');
   else if(/\bdb\b|dumbbell|scott curl|zottman|lying unsupported|lateral raise|reverse fly|rear delt/.test(n))r.push('db');
   else if(/smith/.test(n))r.push('mach');
-  else if(/barbell|bench press|back squat|front squat|deadlift|clean|snatch|jerk|overhead press|push press|zercher|good morning|rack pull|hip thrust|box squat|behind the neck|landmine|rollout|squat iso|100-rep|skull/.test(n))r.push('bb');
+  else if(/barbell|bench press|back squat|front squat|deadlift|clean|snatch|jerk|overhead press|push press|zercher|good morning|rack pull|hip thrust|box squat|behind the neck|landmine|rollout|squat iso|100-rep|skull/.test(n)){r.push('bb');
+    if(/back squat|front squat|bench press|box squat|rack pull|squat iso|behind the neck|pin|incline barbell|close grip bench|medium grip bench|larsen|board press/.test(n))r.push('rack');}
   if(/leg curl|hamstring curl|leg ext|abduction|machine/.test(n))r.push(/single leg hamstring/.test(n)?'mach|band':'mach');
   else if(/cable|pulldown|push ?down|face pull|chop/.test(n))r.push('mach|band');
   if(/\bband/.test(n)||e.c==='banded')r.push('band');
@@ -169,7 +178,7 @@ function buildPool(){const use={},src={};
   META={};POOL=Object.keys(EX).map(k=>meta(k,use[k]||0,src[k])).filter(Boolean);POOL.forEach(m=>META[m.k]=m);
   const cut=Date.now()-2*864e5;RECENT=new Set((S.sets||[]).filter(r=>r.t>cut).map(r=>r.ex));}
 const has=(o,r)=>r.split('|').some(x=>o.eq.includes(x));
-const ok=(m,o)=>m.eq.every(r=>has(o,r))&&!o.avoid.some(j=>m.joints.has(j));
+const ok=(m,o)=>m.eq.every(r=>has(o,r))&&!o.avoid.some(j=>m.joints.has(j))&&(o.eq.includes('bw')||!m.free);
 
 /* ---------- picking ---------- */
 function rngOf(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -309,16 +318,22 @@ function estMin(picks,o){const ms=picks.filter(p=>!p.fin).map(p=>META[p.k]).filt
 /* ---------- state ---------- */
 let G=null;
 const view=document.createElement('div');view.id='v-gen';view.className='wrap hide';
-view.innerHTML=`<button class="back" id="genBack">‹ Home</button><p class="eyebrow" id="genEy">OWN SESSION</p><div id="genBody" style="padding-bottom:40px"></div>`;
+view.innerHTML=`<button class="back" id="genBack">‹ Home</button><p class="eyebrow" id="genEy">Own session</p><div id="genBody" style="padding-bottom:40px"></div>`;
 document.getElementById('v-build').after(view);
 const body=view.querySelector('#genBody');
 const _show=show;show=function(v){_show(v);view.classList.toggle('hide',v!=='gen');};
-function prefs(){return Object.assign({},DEF,S.genPrefs||{});}
+function prefs(){const o=Object.assign({},DEF,S.genPrefs||{});o.eq=[...(o.eq||[])];
+  /* answers saved before bodyweight and rack became choices: keep what they meant */
+  if(!o.eqv){if(!o.eq.includes('bw'))o.eq.unshift('bw');if(o.eq.includes('bb')&&!o.eq.includes('rack'))o.eq.push('rack');o.eqv=2;}
+  return o;}
 function genOpen(){buildPool();G={step:1,o:prefs(),p:Object.assign({},PDEF),seed:Date.now()%1e6,swaps:0,key:null,title:''};show('gen');render();}
 function genEdit(day){buildPool();const gd=day.gen||{};
   G={step:2,o:Object.assign({},DEF,gd.o||{}),p:Object.assign({},PDEF),seed:gd.seed||1,swaps:0,key:day.key,title:day.n,picks:(gd.picks||[]).filter(p=>META[p.k])};
   if(!G.picks.length)G.picks=buildPicks(G.o,G.seed);show('gen');render();}
 window.blockGen=genOpen;
+/* open the generator straight on a suggestion, from answers given elsewhere (the chat) */
+window.blockGenFrom=(patch,title)=>{genOpen();Object.assign(G.o,patch||{});S.genPrefs=JSON.parse(JSON.stringify(G.o));save();
+  G.picks=buildPicks(G.o,G.seed);G.title=title||autoTitle(G.o);G.step=2;render();};
 document.getElementById('genBack').onclick=()=>{if(G&&G.step===3){G.step=2;render();return;}
   if(G&&G.step===2&&!G.key){G.step=1;render();return;}
   if(G&&G.key){S.prog='custom';S.sess=G.key;show('session');renderSession();return;}
@@ -333,7 +348,7 @@ function questions(o,withFocus){
   const progs=[...new Set(PROGRAMS.filter(P=>P.id!=='custom'&&!P.gen).map(P=>P.group||'Other'))].sort((a,b)=>a===own?-1:b===own?1:a.localeCompare(b)).map(g=>[g,g]);
   const ap=APPR(),cur=apprOf(o);
   return(withFocus?q('Time',chips('time',TIME,o.time))+q('Focus',chips('focus',FOCUS,o.focus)):q('Time per session',chips('time',TIME,o.time)))
-   +q('Equipment',`<div class="gpre">${EQ_PRE.map(([l],i)=>`<button data-pre="${i}">${l}</button>`).join('')}</div>${chips('eq',EQ,o.eq,true)}<p class="gmsg" style="margin-top:8px">Bodyweight moves are always in.</p>`)
+   +q('Equipment',`<div class="gpre">${EQ_PRE.map(([l],i)=>`<button data-pre="${i}">${l}</button>`).join('')}</div>${chips('eq',EQ,o.eq,true)}<p class="gmsg" style="margin-top:8px">Turn off Bodyweight to leave out moves without equipment.</p>`)
    +q('Goal',chips('goal',GOAL,o.goal))+q('Effort',chips('eff',EFF,o.eff))+q('Format',chips('fmt',FMT,o.fmt))
    +`<details class="gmore"${o.avoid.length||o.from.length||o.appr?' open':''}><summary>More options</summary>`
    +q('Approach',chips('appr',[['','None','plain rules'],...ap.map(a=>[a.id,a.n,a.by])],o.appr||'')+`<p class="gmsg" id="gApprTxt">${cur?esc(cur.details||cur.short||''):'Pick a coach’s way of training to shape sets, reps, rest and format. Only this session uses it.'}</p>`)
@@ -383,9 +398,9 @@ function parseToday(t){const s=t.toLowerCase(),p={};
   const F=[['fpush',/push.{0,6}(legs|ben)/],['fpull',/pull.{0,6}(hinge|mark)/],['upper',/upper|överkropp/],['lower',/lower|legs?\b|ben\b|underkropp/],['push',/\bpush|press/],['pull',/\bpull|drag/],
     ['core',/core|abs|mage|bål/],['cond',/sweat|svett|cardio|kondition|conditioning|flås/],['full',/full|hela kroppen|helkropp/]];
   for(const[k,re]of F)if(re.test(s)){p.focus=k;break;}
-  if(/hotel|hotell|nothing|ingenting|no equipment|utan utrustning|bodyweight|kroppsvikt|travel|resa/.test(s))p.eq=[];
+  if(/hotel|hotell|nothing|ingenting|no equipment|utan utrustning|bodyweight|kroppsvikt|travel|resa/.test(s))p.eq=['bw'];
   else{const eq=[];[['db',/dumbbell|hantel|hantlar|\bdb\b/],['kb',/kettlebell|\bkb\b/],['bb',/barbell|skivstång|stång|gym/],['bar',/pull-?up bar|räcke|chins/],['rings',/rings|ringar/],['band',/band/],['mach',/cable|kabel|maskin|gym/],['sb',/sandbag|sandsäck/]]
-    .forEach(([k,re])=>{if(re.test(s))eq.push(k);});if(eq.length)p.eq=eq;}
+    .forEach(([k,re])=>{if(re.test(s))eq.push(k);});if(eq.includes('bb')&&/gym|rack|ställning/.test(s))eq.push('rack');if(eq.length)p.eq=['bw',...eq];}
   const av=[];[['knee',/knä|knee/],['back',/rygg|back/],['shoulder',/axel|shoulder/],['wrist',/handled|wrist/]].forEach(([k,re])=>{if(re.test(s)&&/(sore|ont|pain|skad|öm|injur|stel|tweak)/.test(s))av.push(k);});if(av.length)p.avoid=av;
   if(/sweat|svett|flås|pulse|puls|cardio|kondition/.test(s)){p.goal='endur';p.fmt='circuit';}
   else if(/heavy|tungt|strength|styrka|max/.test(s))p.goal='strength';
@@ -412,6 +427,18 @@ function why(){const o=G.o,main=G.picks.filter(p=>!p.fin),parts=[];
   const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,3).map(id=>(progById(id)||{}).n).filter(Boolean);
   if(top.length)parts.push(`From your programs: ${top.join(', ')}.`);
   return parts.map(esc).join(' ');}
+const SWAP_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4"/><path d="M3 8h13a4 4 0 0 1 4 4"/><path d="M17 20l4-4-4-4"/><path d="M21 16H8a4 4 0 0 1-4-4"/></svg>';
+const X_SVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+/* the swap picker: alternatives for the same slot first, or search the whole library */
+function pickerHTML(i){const o=G.o,p=G.picks[i],others=G.picks.filter((x,j)=>j!==i).map(x=>META[x.k]).filter(Boolean),q=(G.pickQ||'').trim().toLowerCase();
+  let list;
+  if(q)list=Object.keys(EX).filter(k=>k!==p.k&&EX[k].n&&EX[k].n.toLowerCase().includes(q)).slice(0,12).map(k=>({k,why:(META[k]&&ok(META[k],o))?'':'needs other gear'}));
+  else{const ctx={chosen:others,rng:rngOf(G.seed+i*13)};list=candidates(p.roles,o,ctx,new Set([p.k])).map(m=>({m,w:weight(m,o,p.roles,ctx)}))
+    .sort((a,b)=>b.w-a.w).slice(0,8).map(x=>({k:x.m.k,why:ROLE[p.roles.find(r=>x.m.roles.has(r))||p.roles[0]]||''}));}
+  return`<div class="gpick"><h5>Swap ${esc((EX[p.k]||{}).n||'')} for</h5>
+    <input type="search" placeholder="Search all exercises" value="${esc(G.pickQ||'')}" aria-label="Search all exercises" autocomplete="off">
+    ${list.length?list.map(x=>`<button class="gopt" data-k="${esc(x.k)}"><span>${esc(EX[x.k].n)}</span><small>${esc(x.why)}</small></button>`).join(''):'<p class="gmsg">Nothing matches.</p>'}
+    <button class="btn-s gwide" data-auto="1" style="margin-top:8px">Pick one for me</button></div>`;}
 function renderSuggest(){const o=G.o,items=assemble(G.picks,o);
   let h=`<input id="gTitle" class="gtitle" value="${esc(G.title)}" aria-label="Session name">
     <p class="sub">~${estMin(G.picks,o)} min · ${lab(FMT,o.fmt).toLowerCase()} · ${lab(GOAL,o.goal).toLowerCase()} · ${lab(EFF,o.eff).toLowerCase()}</p>
@@ -420,7 +447,8 @@ function renderSuggest(){const o=G.o,items=assemble(G.picks,o);
     if(!it.id){h+=`<div class="gplain"><b>${esc(it.n)}</b> · ${esc(it.s)}${it.nt?` · ${esc(it.nt)}`:''}</div>`;return;}
     const ex=exOf({id:it.id}),th=window.blockThumb?blockThumb(ex,44):'';
     h+=`<div class="grow"><button class="gex" data-x="${it.id}">${th}<span><b>${esc(ex.n)}</b><small>${esc(it.s)}${it.nt?` · ${esc(it.nt)}`:''}</small></span></button>
-      <button class="gsw" data-sw="${it._p}" aria-label="Swap ${esc(ex.n)}">↻</button><button class="gdel" data-rm="${it._p}" aria-label="Remove ${esc(ex.n)}">×</button></div>`;});
+      <button class="gsw${G.pickOpen===it._p?' on':''}" data-sw="${it._p}" aria-label="Swap ${esc(ex.n)}" aria-expanded="${G.pickOpen===it._p}">${SWAP_SVG}</button><button class="gdel" data-rm="${it._p}" aria-label="Remove ${esc(ex.n)}">${X_SVG}</button></div>`;
+    if(G.pickOpen===it._p)h+=pickerHTML(it._p);});
   h+=`<p class="gmsg" id="gMsg" role="status"></p>
     ${FAST(o)?'':'<button class="btn-s gwide" id="gAdd">+ Add an exercise</button>'}
     <div class="pacts" style="margin-top:18px"><button class="btn-s" id="gShuf">Shuffle</button><button class="pgo" id="gStart">Start session</button></div>
@@ -431,13 +459,21 @@ function renderSuggest(){const o=G.o,items=assemble(G.picks,o);
   const $=id=>body.querySelector('#'+id),msg=t=>{$('gMsg').textContent=t;};
   $('gTitle').oninput=e=>{G.title=e.target.value;};
   body.querySelectorAll('.gex').forEach(b=>b.onclick=()=>window.exOpen&&exOpen(exOf({id:b.dataset.x})));
-  body.querySelectorAll('[data-sw]').forEach(b=>b.onclick=()=>{const i=+b.dataset.sw,p=G.picks[i],cur=META[p.k];
+  body.querySelectorAll('[data-sw]').forEach(b=>b.onclick=()=>{const i=+b.dataset.sw;G.pickOpen=G.pickOpen===i?null:i;G.pickQ='';renderSuggest();
+    const pk=body.querySelector('.gpick');if(pk)pk.scrollIntoView({block:'nearest',behavior:'smooth'});});
+  const pk=body.querySelector('.gpick');
+  if(pk){const i=G.pickOpen,p=G.picks[i];
+    const use=k=>{const cur=META[p.k];G.picks[i]={...p,k};G.pickOpen=null;G.seen={};renderSuggest();msg(`Swapped ${cur?cur.n:''} for ${(EX[k]||{}).n||k}.`);};
+    pk.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>use(b.dataset.k));
+    const qi=pk.querySelector('input');qi.oninput=()=>{G.pickQ=qi.value;const pos=qi.selectionStart;renderSuggest();const n=body.querySelector('.gpick input');n.focus();n.setSelectionRange(pos,pos);};
+    pk.querySelector('[data-auto]').onclick=()=>autoSwap(i);}
+  function autoSwap(i){const p=G.picks[i],cur=META[p.k];G.pickOpen=null;
     const others=G.picks.filter((x,j)=>j!==i).map(x=>META[x.k]).filter(Boolean);
     G.seen=G.seen||{};const seen=G.seen[i]=G.seen[i]||new Set([p.k]);
     let m=choose(p.roles,o,{chosen:others,rng:rngOf(G.seed+(++G.swaps)*7919)},seen);
     if(!m){seen.clear();seen.add(p.k);m=choose(p.roles,o,{chosen:others,rng:rngOf(G.seed+G.swaps*31)},seen);}
     if(!m){msg(`No other ${ROLE[p.roles[0]]} fits your equipment.`);return;}
-    seen.add(m.k);G.picks[i]={...p,k:m.k};renderSuggest();msg(`Swapped ${cur?cur.n:''} for ${m.n}.`);});
+    seen.add(m.k);G.picks[i]={...p,k:m.k};renderSuggest();msg(`Swapped ${cur?cur.n:''} for ${m.n}.`);}
   body.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{if(G.picks.filter(p=>!p.fin).length<=1&&!G.picks[+b.dataset.rm].fin){msg('Keep at least one exercise.');return;}
     G.picks.splice(+b.dataset.rm,1);G.seen={};renderSuggest();});
   if($('gAdd'))$('gAdd').onclick=()=>{const chosen=G.picks.map(p=>META[p.k]).filter(Boolean),ctx={chosen,rng:rngOf(G.seed+(++G.swaps)*131)};
@@ -594,7 +630,7 @@ document.getElementById('progNew').onclick=genOpen;
 document.getElementById('sessEdit').onclick=()=>{const d=(S.custom||[]).find(x=>x.key===S.sess);if(d&&d.gen)genEdit(d);else buildOpen(S.sess);};
 
 function render(){window.scrollTo(0,0);
-  document.getElementById('genEy').textContent=G.step===3?'NEW PROGRAM':'OWN SESSION';
+  document.getElementById('genEy').textContent=G.step===3?'New program':'Own session';
   document.getElementById('genBack').textContent=G.step===1?'‹ Home':G.step===2&&G.key?'‹ Session':'‹ Back';
   if(G.step===1)renderAsk();else if(G.step===2)renderSuggest();else renderProgForm();}
 if(!document.getElementById('v-home').classList.contains('hide'))renderHome();
