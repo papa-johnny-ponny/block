@@ -14,20 +14,62 @@
 const css=`
 #v-gen .gh{font-size:26px;line-height:1.15;margin:4px 0 6px}
 #v-gen .sub{margin:0}
-.gq{margin:22px 0 0}
-.gq>h4{margin:0 0 10px;color:var(--dim);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none}
-.gchips{display:flex;flex-wrap:wrap;gap:8px}
-.gchip{display:inline-flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:2px;min-height:44px;padding:8px 14px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);color:#fff;font:inherit;font-size:15px;font-weight:600;text-align:left;cursor:pointer}
-.gchip small{font-size:12px;font-weight:500;color:var(--dim)}
+.gq{margin:18px 0 0}
+.gq>h4,.gslh h4{margin:0 0 8px;color:var(--dim);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none}
+.gsec{margin:30px 0 0;padding-top:22px;border-top:1px solid var(--line)}
+.gsec>h3{margin:0;font-size:18px;font-weight:700;color:#fff;letter-spacing:0;text-transform:none}
+.gsec>h3+.gq,.gsec>h3+.gpre{margin-top:14px}
+.gchips{display:flex;flex-wrap:wrap;gap:6px}
+.gchip{display:inline-flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;min-height:38px;padding:6px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);color:#fff;font:inherit;font-size:14px;font-weight:600;text-align:left;cursor:pointer;
+  transition:transform 140ms ease-out,background-color 140ms ease,border-color 140ms ease}
+.gchip:active{transform:scale(.97)}
+.gchip small{font-size:11px;font-weight:500;color:var(--dim)}
+/* intensity as a three-stop slider */
+.gsl{margin:18px 0 0}
+.gslh{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.gslv{font-size:13px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+.gslv small{color:var(--dim);font-weight:500;font-size:13px}
+.gsl input{-webkit-appearance:none;appearance:none;display:block;box-sizing:border-box;width:100%;height:28px;min-height:0;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;cursor:pointer;touch-action:pan-y}
+.gsl input::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--accent) var(--p,50%),var(--surface-2) var(--p,50%))}
+.gsl input::-moz-range-track{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--accent) var(--p,50%),var(--surface-2) var(--p,50%))}
+.gsl input::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-10px;border-radius:50%;background:#fff;border:0;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.gsl input::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:0;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.gsl input:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:8px}
+.gslt{display:flex;justify-content:space-between;margin:2px 0 0}
+.gslt button{padding:6px 0;min-width:64px;background:none;border:0;color:var(--dim);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.gslt button:nth-child(2){text-align:center}.gslt button:first-child{text-align:left}.gslt button:last-child{text-align:right}
+.gslt button.on{color:#fff}
+/* long lists (approaches, creators) as one row that opens a list */
+.gsel{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:52px;padding:8px 14px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);color:#fff;font:inherit;text-align:left;cursor:pointer}
+.gsel b{display:block;font-size:15px;font-weight:600}
+.gsel small{display:block;color:var(--dim);font-size:12px;margin-top:1px}
+.gsel svg{flex:none;color:var(--dim);transition:transform 200ms cubic-bezier(.23,1,.32,1)}
+.gsel[aria-expanded="true"] svg{transform:rotate(180deg)}
+.gpl{margin:6px 0 0;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);max-height:min(52vh,440px);overflow-y:auto;overscroll-behavior:contain}
+.gpl[hidden]{display:none}
+.gpf{display:block;width:calc(100% - 20px);box-sizing:border-box;margin:10px;padding:10px 12px;border-radius:10px;background:#000;color:#fff;border:1px solid var(--line);font:inherit;font-size:16px}
+.gpg{margin:0;padding:12px 14px 4px;color:var(--dim);font-size:12px;font-weight:600}
+.gpo{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:8px 14px;background:none;border:0;color:#fff;font:inherit;text-align:left;cursor:pointer}
+.gpo span{min-width:0}.gpo b{display:block;font-size:15px;font-weight:600}.gpo small{display:block;color:var(--dim);font-size:12px;margin-top:1px}
+.gpo i{flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center}
+.gpo.on i{background:var(--accent);border-color:var(--accent);color:#000}
+.gpo i svg{opacity:0}.gpo.on i svg{opacity:1}
+.gpo[hidden],.gpg[hidden]{display:none}
 .gchip.on{background:var(--accent);border-color:var(--accent);color:#000}
 .gchip.on small{color:rgba(0,0,0,.62)}
 .gpre{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
 .gpre button{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--dim);font:inherit;font-size:13px;font-weight:600}
-.gmore{margin:24px 0 0;border-top:1px solid var(--line)}
-.gmore>summary{cursor:pointer;padding:16px 0 4px;color:#fff;font-weight:600;list-style:none}
+.gmore{margin:30px 0 0;border-top:1px solid var(--line)}
+.gmore>summary{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:22px 0 0;color:#fff;font-size:18px;font-weight:700;list-style:none}
 .gmore>summary::-webkit-details-marker{display:none}
-.gmore>summary::after{content:' +';color:var(--dim)}
-.gmore[open]>summary::after{content:' –'}
+.gmore>summary::after{content:'';flex:none;width:18px;height:18px;background:var(--dim);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat;
+  transition:transform 200ms cubic-bezier(.23,1,.32,1)}
+.gmore[open]>summary::after{transform:rotate(180deg)}
+.gmore>summary small{display:block;color:var(--dim);font-size:13px;font-weight:500;margin-top:2px}
+.gmore .gsec:first-of-type{border-top:0;margin-top:0;padding-top:0}
+@media (prefers-reduced-motion:reduce){.gchip,.gsel svg,.gmore>summary::after{transition:none}}
 .ggo{width:100%;margin-top:28px;min-height:52px}
 .gwide{width:100%;margin-top:10px}
 .gtitle{width:100%;box-sizing:border-box;font-size:22px;font-weight:700;margin:0 0 6px}
@@ -343,29 +385,46 @@ document.getElementById('genBack').onclick=()=>{if(G&&G.step===3){G.step=2;rende
 function chips(name,list,val,multi){return`<div class="gchips" data-g="${name}"${multi?' data-m="1"':''}>${list.map(([k,l,sub])=>{
   const on=multi?val.includes(k):val===k;return`<button class="gchip${on?' on':''}" data-v="${k}" aria-pressed="${on}">${esc(l)}${sub?`<small>${esc(sub)}</small>`:''}</button>`;}).join('')}</div>`;}
 const q=(t,inner)=>`<div class="gq"><h4>${t}</h4>${inner}</div>`;
+const sec=(t,inner)=>`<section class="gsec"><h3>${t}</h3>${inner}</section>`;
+const CHEV='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+const TICK='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+/* a stepped slider for ordered choices (effort) */
+const SL={eff:EFF};
+function slider(name,title,val){const list=SL[name],i=Math.max(0,list.findIndex(x=>x[0]===val));
+  return`<div class="gsl" data-s="${name}"><div class="gslh"><h4>${title}</h4><span class="gslv"></span></div>
+    <input type="range" min="0" max="${list.length-1}" step="1" value="${i}" aria-label="${title}">
+    <div class="gslt">${list.map(([,l],j)=>`<button type="button" data-i="${j}" tabindex="-1">${esc(l)}</button>`).join('')}</div></div>`;}
+function paintSl(sl){const list=SL[sl.dataset.s],inp=sl.querySelector('input'),i=+inp.value,max=list.length-1;
+  inp.style.setProperty('--p',`calc(${i/max*100}% + ${13-26*i/max}px)`);inp.setAttribute('aria-valuetext',list[i][1]);
+  sl.querySelector('.gslv').innerHTML=`${esc(list[i][1])} <small>· ${esc(list[i][2]||'')}</small>`;
+  sl.querySelectorAll('.gslt button').forEach((b,j)=>b.classList.toggle('on',j===i));}
+/* a long list behind one row: opts [[value,label,sub,group]] */
+function picker(name,title,opts,val,multi,none){
+  const groups=[...new Set(opts.map(o=>o[3]||''))],many=opts.length>12;
+  const row=o=>{const on=multi?val.includes(o[0]):val===o[0];
+    return`<button type="button" class="gpo${on?' on':''}" data-v="${esc(o[0])}" data-l="${esc(o[1])}" data-sub="${esc(o[2]||'')}" role="${multi?'menuitemcheckbox':'menuitemradio'}" aria-checked="${on}"><span><b>${esc(o[1])}</b>${o[2]?`<small>${esc(o[2])}</small>`:''}</span><i>${TICK}</i></button>`;};
+  return`<div class="gq gpk" data-p="${name}"${multi?' data-m="1"':''} data-none="${esc(none)}"><h4>${title}</h4>
+    <button type="button" class="gsel" aria-expanded="false"><span><b></b><small></small></span>${CHEV}</button>
+    <div class="gpl" hidden role="menu">${many?`<input class="gpf" type="search" placeholder="Search" aria-label="Search ${title.toLowerCase()}">`:''}
+    ${groups.map(g=>(g?`<p class="gpg">${esc(g)}</p>`:'')+opts.filter(o=>(o[3]||'')===g).map(row).join('')).join('')}</div></div>`;}
+function paintPk(pk){const multi=!!pk.dataset.m,on=[...pk.querySelectorAll('.gpo.on')],b=pk.querySelector('.gsel b'),sm=pk.querySelector('.gsel small');
+  if(multi){const n=on.filter(r=>r.dataset.v);b.textContent=n.length?n.slice(0,2).map(r=>r.dataset.l).join(', ')+(n.length>2?` +${n.length-2}`:''):pk.dataset.none;
+    sm.textContent=n.length?`${n.length} picked`:'Tap to pick';}
+  else{const r=on[0];b.textContent=r?r.dataset.l:pk.dataset.none;sm.textContent=r?r.dataset.sub:'';}}
 function questions(o,withFocus){
   const own=window.BLOCK_OWN_GROUP||'Your own builds';
   const progs=[...new Set(PROGRAMS.filter(P=>P.id!=='custom'&&!P.gen).map(P=>P.group||'Other'))].sort((a,b)=>a===own?-1:b===own?1:a.localeCompare(b)).map(g=>[g,g]);
-  const ap=APPR(),cur=apprOf(o);
-  return(withFocus?q('Time',chips('time',TIME,o.time))+q('Focus',chips('focus',FOCUS,o.focus)):q('Time per session',chips('time',TIME,o.time)))
-   +q('Equipment',`<div class="gpre">${EQ_PRE.map(([l],i)=>`<button data-pre="${i}">${l}</button>`).join('')}</div>${chips('eq',EQ,o.eq,true)}<p class="gmsg" style="margin-top:8px">Turn off Bodyweight to leave out moves without equipment.</p>`)
-   +q('Goal',chips('goal',GOAL,o.goal))+q('Effort',chips('eff',EFF,o.eff))+q('Format',chips('fmt',FMT,o.fmt))
-   +`<details class="gmore"${o.avoid.length||o.from.length||o.appr?' open':''}><summary>More options</summary>`
-   +q('Approach',chips('appr',[['','None','plain rules'],...ap.map(a=>[a.id,a.n,a.by])],o.appr||'')+`<p class="gmsg" id="gApprTxt">${cur?esc(cur.details||cur.short||''):'Pick a coach’s way of training to shape sets, reps, rest and format. Only this session uses it.'}</p>`)
+  const ap=APPR().slice().sort((a,b)=>(a.by||'').localeCompare(b.by||'')),cur=apprOf(o);
+  return(withFocus?sec('Today',q('Time',chips('time',TIME,o.time))+q('Focus',chips('focus',FOCUS,o.focus))):sec('Session',q('Time per session',chips('time',TIME,o.time))))
+   +sec('Equipment',`<div class="gpre">${EQ_PRE.map(([l],i)=>`<button data-pre="${i}">${l}</button>`).join('')}</div>${chips('eq',EQ,o.eq,true)}<p class="gmsg" style="margin-top:8px">Turn off Bodyweight to leave out moves without equipment.</p>`)
+   +sec('Training',q('Goal',chips('goal',GOAL,o.goal))+slider('eff','Intensity',o.eff)+q('Format',chips('fmt',FMT,o.fmt)))
+   +`<details class="gmore"${o.avoid.length||o.from.length||o.appr?' open':''}><summary><span>More options<small>Approach, things to go easy on, creators</small></span></summary>`
+   +`<section class="gsec">`+picker('appr','Approach',[['','None','plain rules'],...ap.map(a=>[a.id,a.n,a.short||'',a.by])],o.appr||'',false,'None')
+   +`<p class="gmsg" id="gApprTxt">${cur?esc(cur.details||cur.short||''):'Pick a coach’s way of training to shape sets, reps, rest and format. Only this session uses it.'}</p>`
    +q('Go easy on',chips('avoid',AVOID,o.avoid,true))
    +q('Include',chips('extra',EXTRA,EXTRA.filter(([k])=>o[k]).map(([k])=>k),true))
-   +q('Lean on these creators',chips('from',progs,o.from,true))+`</details>`;}
-function wire(target,after){
-  body.querySelectorAll('.gchips').forEach(box=>{const name=box.dataset.g,multi=!!box.dataset.m;
-    box.querySelectorAll('.gchip').forEach(b=>b.onclick=()=>{const raw=b.dataset.v,v=isNaN(+raw)?raw:+raw;
-      if(name==='extra'){target[v]=!target[v];b.classList.toggle('on',target[v]);b.setAttribute('aria-pressed',target[v]);}
-      else if(multi){const a=target[name],i=a.indexOf(v);if(i<0)a.push(v);else a.splice(i,1);b.classList.toggle('on',i<0);b.setAttribute('aria-pressed',i<0);}
-      else{target[name]=v;box.querySelectorAll('.gchip').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b);});}
-      if(name==='appr'){const A=apprOf(target),t=body.querySelector('#gApprTxt');if(t)t.textContent=A?(A.details||A.short||''):'';
-        if(A&&A.fmt&&target.fmt!==undefined){target.fmt=A.fmt;body.querySelectorAll('[data-g="fmt"] .gchip').forEach(x=>{const on=x.dataset.v===A.fmt;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on);});}}
-      after&&after(name);});});
-  body.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{target.eq=[...EQ_PRE[+b.dataset.pre][1]];
-    body.querySelectorAll('[data-g="eq"] .gchip').forEach(x=>{const on=target.eq.includes(x.dataset.v);x.classList.toggle('on',on);x.setAttribute('aria-pressed',on);});after&&after('eq');});}
+   +picker('from','Lean on these creators',progs,o.from,true,'Any creator')+`</section></details>`;}
+function wire(target,after){wireInto(body,target,after);}
 function renderAsk(){
   body.innerHTML=`<h2 class="gh">What do you have today?</h2><p class="sub">Describe it in a sentence, or tap your answers. Your last answers stay picked.</p>
     <div class="gq"><textarea id="gTell" rows="2" class="gtitle" style="font-size:16px;font-weight:500;min-height:60px" placeholder="e.g. 20 min in a hotel room, sore knee, want to sweat"></textarea>
@@ -513,28 +572,43 @@ function summary(){const p=G.p,sp=splitOf(p,G.o.focus),dl=deloadWeeks(p);
 function renderProgForm(){const p=G.p;
   body.innerHTML=`<h2 class="gh">Make it a program</h2><p class="sub">Today’s session becomes day 1. The other days are built from the same answers, without repeating exercises where there are alternatives.</p>
     <input id="gpName" class="gtitle" style="margin-top:18px;font-size:18px" placeholder="${esc(autoProgName())}" value="${esc(p.name)}" aria-label="Program name">
-    ${q('Days a week',chips('days',[2,3,4,5,6].map(d=>[d,String(d)]),p.days))}
-    ${q('Weeks',chips('weeks',[4,6,8,12].map(w=>[w,String(w)]),p.weeks))}
-    ${q('Split',chips('split',SPLIT,p.split))}
-    ${q('Progression',chips('prog',PROG,p.prog))}
-    ${q('Autoregulation',chips('auto',AUTO,p.auto))}
-    ${q('Deload',chips('deload',DELOAD,p.deload))}
+    ${sec('Schedule',q('Days a week',chips('days',[2,3,4,5,6].map(d=>[d,String(d)]),p.days))+q('Weeks',chips('weeks',[4,6,8,12].map(w=>[w,String(w)]),p.weeks))+q('Split',chips('split',SPLIT,p.split)))}
+    ${sec('Progression',q('How it progresses',chips('prog',PROG,p.prog))+q('Autoregulation',chips('auto',AUTO,p.auto))+q('Deload',chips('deload',DELOAD,p.deload)))}
     <div class="gsum" id="gpSum">${summary()}</div>
-    <details class="gmore"><summary>Same answers as the session</summary>${questions(G.o,false)}</details>
+    <details class="gmore"><summary><span>Session answers<small>Time, equipment, goal and more, same as today</small></span></summary>${questions(G.o,false)}</details>
     <button class="pgo ggo" id="gpGo">Create program</button>`;
   wire(G.p,()=>{body.querySelector('#gpSum').innerHTML=summary();body.querySelector('#gpName').placeholder=autoProgName();});
   /* the session answers inside "Same answers" belong to G.o, not the program settings */
   wireInto(body.querySelector('.gmore'),G.o);
   body.querySelector('#gpName').oninput=e=>{G.p.name=e.target.value;};
   body.querySelector('#gpGo').onclick=()=>{const id=makeProgram();S.prog=id;progTab='sessions';save();show('program');renderProgram();};}
-function wireInto(root,target){
+function wireInto(root,target,after){
+  const pressed=(box,fn)=>box.querySelectorAll('.gchip').forEach(x=>{const on=fn(x);x.classList.toggle('on',on);x.setAttribute('aria-pressed',on);});
   root.querySelectorAll('.gchips').forEach(box=>{const name=box.dataset.g,multi=!!box.dataset.m;
     box.querySelectorAll('.gchip').forEach(b=>b.onclick=()=>{const raw=b.dataset.v,v=isNaN(+raw)?raw:+raw;
       if(name==='extra'){target[v]=!target[v];b.classList.toggle('on',target[v]);b.setAttribute('aria-pressed',target[v]);}
       else if(multi){const a=target[name],i=a.indexOf(v);if(i<0)a.push(v);else a.splice(i,1);b.classList.toggle('on',i<0);b.setAttribute('aria-pressed',i<0);}
-      else{target[name]=v;box.querySelectorAll('.gchip').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b);});}});});
+      else{target[name]=v;pressed(box,x=>x===b);}
+      after&&after(name);});});
   root.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{target.eq=[...EQ_PRE[+b.dataset.pre][1]];
-    root.querySelectorAll('[data-g="eq"] .gchip').forEach(x=>{const on=target.eq.includes(x.dataset.v);x.classList.toggle('on',on);x.setAttribute('aria-pressed',on);});});}
+    root.querySelectorAll('[data-g="eq"]').forEach(box=>pressed(box,x=>target.eq.includes(x.dataset.v)));after&&after('eq');});
+  root.querySelectorAll('.gsl').forEach(sl=>{const name=sl.dataset.s,list=SL[name],inp=sl.querySelector('input');
+    const set=i=>{inp.value=i;target[name]=list[i][0];paintSl(sl);after&&after(name);};
+    inp.oninput=()=>set(+inp.value);sl.querySelectorAll('.gslt button').forEach(b=>b.onclick=()=>set(+b.dataset.i));paintSl(sl);});
+  root.querySelectorAll('.gpk').forEach(pk=>{const name=pk.dataset.p,multi=!!pk.dataset.m,btn=pk.querySelector('.gsel'),list=pk.querySelector('.gpl'),f=pk.querySelector('.gpf');
+    const toggle=open=>{list.hidden=!open;btn.setAttribute('aria-expanded',open);if(open&&f&&matchMedia('(pointer:fine)').matches)f.focus();};
+    btn.onclick=()=>toggle(list.hidden);
+    if(f)f.oninput=()=>{const t=f.value.trim().toLowerCase();
+      list.querySelectorAll('.gpo').forEach(r=>r.hidden=!!t&&!r.textContent.toLowerCase().includes(t));
+      list.querySelectorAll('.gpg').forEach(h=>{let n=h.nextElementSibling,any=false;while(n&&n.classList.contains('gpo')){if(!n.hidden)any=true;n=n.nextElementSibling;}h.hidden=!any;});};
+    list.querySelectorAll('.gpo').forEach(r=>r.onclick=()=>{const v=r.dataset.v;
+      if(multi){const a=target[name],i=a.indexOf(v);if(i<0)a.push(v);else a.splice(i,1);r.classList.toggle('on',i<0);r.setAttribute('aria-checked',i<0);}
+      else{target[name]=v;list.querySelectorAll('.gpo').forEach(x=>{x.classList.toggle('on',x===r);x.setAttribute('aria-checked',x===r);});toggle(false);}
+      paintPk(pk);
+      if(name==='appr'){const A=apprOf(target),t=root.querySelector('#gApprTxt');if(t)t.textContent=A?(A.details||A.short||''):'';
+        if(A&&A.fmt&&target.fmt!==undefined){target.fmt=A.fmt;root.querySelectorAll('[data-g="fmt"]').forEach(box=>pressed(box,x=>x.dataset.v===A.fmt));}}
+      after&&after(name);});
+    paintPk(pk);});}
 function autoProgName(){const sp=splitOf(G.p,G.o.focus);return`${SPLIT_LAB[sp.s]} · ${lab(GOAL,G.o.goal).toLowerCase()} · ${G.p.weeks} weeks`;}
 function typeOf(o,s){const t=FAST(o)?'Circuit':{power:'Power',strength:'Strength',muscle:'Hypertrophy',endur:'Endurance'}[o.goal];return[t,SPLIT_LAB[s],'Made by you'];}
 function makeProgram(){const o=JSON.parse(JSON.stringify(G.o)),p={...G.p},sp=splitOf(p,o.focus),id='g_'+uid();

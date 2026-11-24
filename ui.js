@@ -29,9 +29,17 @@ const css2=`
 .xl{margin-top:4px;font-size:14px;color:var(--dim)}
 .xl .xrx{color:#d6d6d9;font-variant-numeric:tabular-nums}
 .xm small{color:var(--dim-2);font-size:13px;margin-top:3px}
-.adc h4{font-size:13px;color:var(--dim);font-weight:600}
-.adb.on{background:var(--surface-2);border-color:transparent;color:var(--dim)}
-@media (hover:hover) and (pointer:fine){.adb:hover{border-color:#fff}}
+.adc,.sdet .adc{background:none;border-radius:0;border-top:1px solid var(--line);padding:12px 0 0;margin:14px 0 2px}
+.adc h4{margin:0 0 2px;font-size:13px;color:var(--dim);font-weight:600}
+.adc .xr{gap:12px;padding:7px 0}
+.adc .xr+.xr{border-top:0}
+.adc .th{border-radius:9px;opacity:.85}
+.adc .xm b{font-size:15px;font-weight:600;line-height:1.3;color:#d6d6d9}
+.adc .xl{margin-top:1px;font-size:13px}
+.adc .xl .xrx{color:var(--dim)}
+.adb{width:36px;height:36px;padding:0;border-radius:50%;display:grid;place-items:center;background:none;border:1px solid var(--line);color:var(--dim)}
+.adb.on{background:var(--surface-2);border-color:transparent;color:var(--accent)}
+@media (hover:hover) and (pointer:fine){.adb:hover{border-color:#fff;color:#fff}}
 .adb:active,.xr:active{transform:scale(.98)}
 .adb,.xr{transition:transform 140ms ease-out}`;
 const st=document.createElement('style');st.textContent=css+css2;document.head.appendChild(st);

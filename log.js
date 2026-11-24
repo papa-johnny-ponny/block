@@ -645,9 +645,11 @@ function tipsFor(prog,key){if(prog==='nogi')return[];
   Object.keys(added).forEach(id=>{if(!tips.some(t=>t[0]===id))tips.push([id,added[id].s,'added']);});
   return tips.filter(t=>EX[t[0]]).map(t=>({id:t[0],s:t[1],why:t[2],on:!!added[t[0]]}));}
 function addonsHTML(prog,key,title){const tips=tipsFor(prog,key);if(!tips.length)return'';
+  const plus='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+    tick='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   return `<div class="adc"><h4>${esc(title||'Add-ons · grip and neck, if you want')}</h4>${tips.map(t=>{const ex=exOf({id:t.id});
-    return `<div class="xr">${thumbHTML(ex,44)}<span class="xm"><b>${esc(ex.n)}</b><span class="xl"><span class="xrx">${esc(t.s)}</span></span>${t.why!=='added'?`<small>${esc(t.why.replace(/^\w/,c=>c.toUpperCase()))}</small>`:''}</span>
-      <button class="adb ${t.on?'on':''}" data-add="${t.id}" data-s="${esc(t.s)}" aria-pressed="${t.on}">${t.on?'Added ✓':'+ Add'}</button></div>`;}).join('')}</div>`;}
+    return `<div class="xr">${thumbHTML(ex,32)}<span class="xm"><b>${esc(ex.n)}</b><span class="xl"><span class="xrx">${esc(t.s)}</span></span></span>
+      <button class="adb ${t.on?'on':''}" data-add="${t.id}" data-s="${esc(t.s)}" aria-pressed="${t.on}" aria-label="${t.on?'Remove':'Add'} ${esc(ex.n)}">${t.on?tick:plus}</button></div>`;}).join('')}</div>`;}
 function wireAddons(root,prog,key,redraw){
   root.querySelectorAll('[data-add]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();addonToggle(prog,key,b.dataset.add,b.dataset.s);redraw();});}
 
