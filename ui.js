@@ -44,7 +44,8 @@ const css2=`
 .adb,.xr{transition:transform 140ms ease-out}`;
 const st=document.createElement('style');st.textContent=css+css2+`
 .sltools{margin:6px 0 14px!important}
-#sessionList .sltools+.grp{margin-top:6px}`;document.head.appendChild(st);
+#sessionList .sltools+.grp{margin-top:6px}
+.gmore.closing>summary::after{transform:none}`;document.head.appendChild(st);
 
 /* ---------- opening things: short, ease-out, interruptible; nothing for reduced motion ---------- */
 const RM=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -52,7 +53,7 @@ const EASE='cubic-bezier(.23,1,.32,1)';
 function grow(el,h0,h1,dur=280){if(RM()||!el||!h0||h0===h1)return;
   const bs=el.style.boxSizing,ov=el.style.overflow;el.style.boxSizing='border-box';el.style.overflow='hidden';
   const a=el.animate([{height:h0+'px'},{height:h1+'px'}],{duration:dur,easing:EASE});
-  const done=()=>{el.style.boxSizing=bs;el.style.overflow=ov;};a.onfinish=done;a.oncancel=done;}
+  const done=()=>{el.style.boxSizing=bs;el.style.overflow=ov;};a.onfinish=done;a.oncancel=done;return a;}
 function fadeIn(el,dy=6,dur=240){if(RM()||!el)return;
   el.animate([{opacity:0,transform:`translateY(${dy}px)`},{opacity:1,transform:'none'}],{duration:dur,easing:EASE});}
 /* reveal a block that just appeared: height from 0 plus a fade */
@@ -61,15 +62,38 @@ window.blockReveal=el=>{if(RM()||!el)return;const h=el.offsetHeight;if(!h)return
   const a=el.animate([{height:'0px',opacity:0},{height:h+'px',opacity:1}],{duration:280,easing:EASE});
   const done=()=>{el.style.overflow=ov;};a.onfinish=done;a.oncancel=done;};
 window.blockFade=el=>fadeIn(el,6,220);
-/* a session card opening or closing grows to its new height; its details fade in */
+/* a session card opening or closing grows or shrinks to its new height. Opening fades the details in;
+   closing keeps them on screen while they fade and the card shrinks, then hides them. A tap mid-way reverses from where it is */
 if(typeof slSet==='function'){const _sl=slSet;
   slSet=function(P,d,w,open){const was=w.classList.contains('open'),h0=w.isConnected?w.offsetHeight:0;
-    _sl.apply(this,arguments);if(!h0||was===open)return;
-    grow(w,h0,w.offsetHeight,open?300:220);if(open)fadeIn(w.querySelector('.sdet'),-4,280);};}
+    (w._sla||[]).forEach(a=>a.cancel());w._sla=null;
+    _sl.apply(this,arguments);if(!h0||was===open||RM())return;
+    const panel=w.querySelector('.sdet'),h1=w.offsetHeight;
+    if(open){grow(w,h0,h1,300);fadeIn(panel,-4,280);return;}
+    if(!panel)return grow(w,h0,h1,220);
+    panel.hidden=false;
+    const a=grow(w,h0,h1,220),f=panel.animate([{opacity:1},{opacity:0}],{duration:200,easing:'ease-in-out',fill:'forwards'});
+    w._sla=[a,f].filter(Boolean);
+    const end=()=>{if(!w.classList.contains('open'))panel.hidden=true;f.cancel();w._sla=null;};
+    a?a.addEventListener('finish',end):end();};}
+/* closing a block that is about to be removed: height, margins and opacity to zero, then done() */
+window.blockCollapse=(els,done,dur=220)=>{els=(els||[]).filter(e=>e&&e.offsetHeight);if(RM()||!els.length){done();return;}
+  let n=els.length;els.forEach(el=>{const cs=getComputedStyle(el);el.style.overflow='hidden';el.style.boxSizing='border-box';
+    el.animate([{height:el.offsetHeight+'px',opacity:1,marginTop:cs.marginTop,marginBottom:cs.marginBottom},
+      {height:'0px',opacity:0,marginTop:'0px',marginBottom:'0px'}],{duration:dur,easing:EASE,fill:'forwards'}).onfinish=()=>{if(--n===0)done();};});};
+/* "More options" and other folds built on <details>: open and close with the same height animation */
+document.addEventListener('click',e=>{const s=e.target.closest&&e.target.closest('details.gmore>summary');if(!s||RM())return;
+  const d=s.parentElement,h0=d.offsetHeight,closing=d.open&&!d._closing;e.preventDefault();
+  if(d._a){d._a.cancel();d._a=null;}d._closing=false;d.classList.remove('closing');
+  if(!closing){d.open=true;d._a=grow(d,h0,d.offsetHeight,280);return;}
+  d.open=false;const h1=d.offsetHeight;d.open=true;d._closing=true;d.classList.add('closing');
+  const a=d._a=grow(d,h0,h1,220),end=()=>{d._closing=false;d.classList.remove('closing');d.open=false;d._a=null;};
+  a?a.addEventListener('finish',end):end();});
 /* switching screens: the new one fades up a few pixels. Views with fixed parts (workout, player) only fade,
    since a transform would move their fixed bars during the animation */
-{let last=null;const _sh=show;
-  show=function(v){const same=v===last;_sh(v);last=v;if(same||RM())return;const el=document.getElementById('v-'+v);if(!el)return;
-    if(v==='log'||v==='play')el.animate([{opacity:0},{opacity:1}],{duration:180,easing:'ease-out'});else fadeIn(el,8,240);};}
+/* going deeper fades up from below; going back (closing a session, an exercise page…) mirrors it and settles down from above */
+{let last=null;const _sh=show,DEPTH={home:0,session:2,play:3,log:3},dep=v=>v in DEPTH?DEPTH[v]:1;
+  show=function(v){const same=v===last,back=last&&dep(v)<dep(last);_sh(v);last=v;if(same||RM())return;const el=document.getElementById('v-'+v);if(!el)return;
+    if(v==='log'||v==='play')el.animate([{opacity:0},{opacity:1}],{duration:180,easing:'ease-out'});else fadeIn(el,back?-8:8,back?220:240);};}
 
 })();
