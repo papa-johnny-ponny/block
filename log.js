@@ -152,7 +152,9 @@ let LG=null,RT=null;
 const VIEWS=['home','program','session','library','settings','play','build'];
 const visibleView=()=>VIEWS.find(v=>{const el=document.getElementById('v-'+v);return el&&!el.classList.contains('hide');})||'program';
 const isBW=ex=>{const c=(EX[ex.key]||{}).c;return c==='bodyweight'||c==='skill'||c==='animal'||c==='plyo';};
-const unitOf=sp=>{const t=(sp&&sp.nt)||'';return /sec|second/i.test(t)?'s':/meter|\bm\b/i.test(t)?'m':'reps';};
+/* reps by default; exercises with a unit (EX.u: min / s / m, e.g. jump rope, rope flow, runs) log that instead */
+const uOf=(x,ex)=>(ex&&ex.u)||((EX[(x&&x.item&&x.item.id)]||{}).u)||'';
+const unitOf=(sp,ex)=>{if(ex&&ex.u)return ex.u;const t=(sp&&sp.nt)||'';return /sec|second/i.test(t)?'s':/meter|\bm\b/i.test(t)?'m':'reps';};
 const fmtKg=v=>v==null||v===''?'':String(+(+v).toFixed(2));
 const numOf=v=>{const n=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(n)&&n>0?n:null;};
 
@@ -175,7 +177,7 @@ function findRec(C,x,id){const w=id[0]==='w',n=+id.replace('w','');
 
 /* ----- set rows (shared) ----- */
 function rowsHTML(C,x,ex,P){
-  const recs=recsOf(C,x),bw=isBW(ex),unit=unitOf(x.sp),ps=x.sp.ps;
+  const recs=recsOf(C,x),bw=isBW(ex),xu=uOf(x,ex),unit=unitOf(x.sp,{u:xu}),ps=x.sp.ps;
   const work=recs.filter(r=>!r.check&&!r.warm&&r.score==null),warm=recs.filter(r=>r.warm);
   const maxN=work.reduce((m,r)=>Math.max(m,r.set||0),0);
   const nW=Math.max(0,P.sets+(C.extra[x.idx]||0),maxN),nWu=Math.max(warm.reduce((m,r)=>Math.max(m,r.set||0),0),C.wu[x.idx]||0);
@@ -189,7 +191,7 @@ function rowsHTML(C,x,ex,P){
     const rPh=q&&q.r&&!/^\d+$/.test(q.r)?q.r:'–';
     const open=C.menu===x.idx+'|'+id,last=!w&&n===nW&&!r;
     let s=`<div class="lgr ${r?'done':''}" data-row="${id}"><button class="lgn ${w?'w':''}" data-a="log" aria-label="${r?'Undo':'Log'} ${w?'warm-up':'set'} ${n}">${w?'W'+n:n}</button>
-      <label class="lgv"><input type="number" inputmode="decimal" data-f="kg" value="${fmtKg(kg)}" placeholder="${esc(kgPh)}" aria-label="kg"><span>${bw?'+kg':'kg'}</span></label>
+      <label class="lgv"${xu==='min'||xu==='m'?' style="visibility:hidden"':''}><input type="number" inputmode="decimal" data-f="kg" value="${fmtKg(kg)}" placeholder="${esc(kgPh)}" aria-label="kg"><span>${bw?'+kg':'kg'}</span></label>
       <label class="lgv"><input type="number" inputmode="numeric" data-f="reps" value="${reps==null?'':reps}" placeholder="${esc(rPh)}" aria-label="${unit}"><span>${unit}</span></label>
       <button class="lgdot" data-a="menu" aria-label="More for this set" aria-expanded="${open}">⋮</button></div>`;
     if(r){const f=[r.drop?'drop set':'',r.max?'max reps':'',r.fail?'failed':'',r.rpe!=null?`RPE ${r.rpe}`:'',r.rir!=null?`RIR ${r.rir===3?'3+':r.rir}`:'',r.vid?'video':'',r.note?`“${r.note}”`:''].filter(Boolean);
@@ -284,7 +286,7 @@ function setStats(ex,kg,reps,self){
     ['Average at this weight',same.length?`${f(same.reduce((a,z)=>a+ +z.reps,0)/same.length)} reps`:'–'],
     ['% of 1RM',pct(kg,rm)],['% of heaviest set',pct(kg,best1)],['% of best 8-rep set',pct(kg,best8)],['× bodyweight',kg&&bw?`${f(kg/bw)} ×`:'–']];}
 function setMenu(C,x,id,btn,redraw){
-  const k=logKey(C.prog,C.key,x.idx),ex=exFor(x.item,k),w=id[0]==='w',n=+id.replace('w',''),bw=isBW(ex),unit=unitOf(x.sp);
+  const k=logKey(C.prog,C.key,x.idx),ex=exFor(x.item,k),w=id[0]==='w',n=+id.replace('w',''),bw=isBW(ex),unit=unitOf(x.sp,{u:uOf(x,ex)});
   const rowEl=btn.closest('.lgr'),rect=rowEl.getBoundingClientRect();
   const val=f=>{const r=findRec(C,x,id);if(r)return r[f];const i=rowEl.querySelector(`[data-f=${f}]`);if(!i)return null;return numOf(i.value||(/^\d+(\.\d+)?$/.test(i.placeholder)?i.placeholder:''));};
   const ov=document.createElement('div');ov.className='smenu';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',`Set ${n}`);

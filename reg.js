@@ -38,9 +38,10 @@ window.BLOCK_MEDIA=window.BLOCK_MEDIA||{};window.BLOCK_INFO_ADD=window.BLOCK_INF
 {const _exOf=exOf;exOf=function(item){const e=_exOf(item),m=window.BLOCK_MEDIA[e.key];if(m&&m.v)e.v=m.v;if(item&&item.v)e.v=item.v;return e;};}
 /* creators of the programs that were already in the app */
 const OWN='John Stolpe';
-const G={dense12:'Anthony Gusmao',density:'Steven McCoyne',sandbag:'Gym Free',fiveweek:'Josef Eriksson',ssforge:'FORGE',
+const G={dense12:'Anthony Gusmao',density:'Steven McCoyne',sandbag:'Gym Free',fiveweek:'Josef Eriksson',ssforge:'Pavel Tsatsouline',
   bbw:'FitnessFAQs',hspro:'FitnessFAQs',nogi:'Nogi Gorilla',built26:'Josef Eriksson',cd_ul:'Chris Detmering',cd_ppl:'Chris Detmering',cd_bwdb:'Chris Detmering',
   week:OWN,tpp:OWN,chopcarry:OWN,shredfast:'Luke Powell',custom:OWN};
 PROGRAMS.forEach(P=>{if(!P.group)P.group=G[P.id]||(P.by)||'Other';});
 window.BLOCK_OWN_GROUP=OWN;
+if(!BLOCK_GROUPS['Pavel Tsatsouline'])BLOCK_GROUPS['Pavel Tsatsouline']={blurb:'StrongFirst founder. Kettlebell swings and get-ups as a daily base, barbell strength with low reps and lots of tension.'};
 })();

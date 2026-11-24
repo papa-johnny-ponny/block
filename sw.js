@@ -1,6 +1,6 @@
 // Network-first: always fetch the latest version when online, fall back to cache offline.
-const CACHE = 'block-v3';
-const FILES = ['./', 'index.html', 'sync.js', 'cal.js', 'videos.js', 'log.js', 'home.js', 'steps.js','exp.js','detmering.js','reg.js','quick.js','packs.js','clips.js','gen.js','ai.js','chat.js','ui.js','nav.js', 'manifest.webmanifest', 'icon-180-lime.png', 'icon-192-lime.png', 'icon-512-lime.png'];
+const CACHE = 'block-v4';
+const FILES = ['./', 'index.html', 'sync.js', 'cal.js', 'videos.js', 'log.js', 'home.js', 'steps.js','exp.js','detmering.js','reg.js','quick.js','run.js','flow.js','packs.js','clips.js','gen.js','ai.js','chat.js','ui.js','nav.js', 'manifest.webmanifest', 'icon-180-lime.png', 'icon-192-lime.png', 'icon-512-lime.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

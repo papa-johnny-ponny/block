@@ -17,6 +17,9 @@ const css=`
 .hlink{display:flex;align-items:center;gap:10px;width:100%;padding:14px 2px;color:var(--dim);font-size:15px;font-weight:600}
 .hlink i{font-style:normal;color:var(--accent);font-size:20px;line-height:1;width:20px;text-align:center}
 .hlink b{color:#fff;font-weight:600}
+.hlink.hown{justify-content:center;margin:12px 0 0;padding:13px 16px;border:1.5px solid rgba(255,255,255,.32);border-radius:16px;color:var(--dim);transition:transform 140ms ease-out,border-color 140ms ease-out}
+.hlink.hown:active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){.hlink.hown:hover{border-color:#fff}}
 
 /* week: days on the page, the day as a line */
 #homeCal{margin-top:8px}
@@ -109,7 +112,7 @@ renderNext=function(){_renderNext();
     strip.innerHTML=show.map(x=>blockThumb(exFor(x.item,logKey(P.id,k,x.idx)),44)).join('')+(items.length>show.length?`<span class="more">+${items.length-show.length}</span>`:'');
     const acts=card.querySelector('.pacts');if(acts)acts.before(strip);}
   const own=document.getElementById('nOwn');
-  if(own){own.className='hlink';own.innerHTML='<i>+</i><span><b>Own session</b> · pick exercises and go</span>';}
+  if(own){own.className='hlink hown';own.innerHTML='<i>+</i><span><b>Own session</b> · pick exercises and go</span>';}
 };
 
 /* ----- overview ----- */

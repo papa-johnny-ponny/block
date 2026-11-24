@@ -130,7 +130,7 @@ const TIME=[15,20,30,45,60,75].map(t=>[t,`${t} min`]);
 const FOCUS=[['full','Full body'],['upper','Upper'],['lower','Lower'],['push','Push'],['pull','Pull'],
   ['fpush','Push + legs','squat, lunge, press'],['fpull','Pull + hinge','deadlift, row, pull-up'],['core','Core'],['cond','Conditioning']];
 const EQ=[['bw','Bodyweight'],['db','Dumbbells'],['kb','Kettlebell'],['bb','Barbell'],['rack','Squat rack + bench'],['bar','Pull-up / dip bar'],['rings','Rings'],
-  ['band','Bands'],['mach','Cables & machines'],['cardio','Bike, rower or ski'],['sb','Sandbag']];
+  ['band','Bands'],['mach','Cables & machines'],['cardio','Bike, rower or ski'],['sb','Sandbag'],['mace','Mace']];
 const EQ_PRE=[['Home',['bw','db','kb','bar','band']],['Gym',['bw','db','kb','bb','rack','bar','rings','band','mach','cardio']],['Kettlebell only',['kb']],['Bodyweight only',['bw']]];
 const GOAL=[['power','Power','explosive · 3–5 reps'],['strength','Strength','heavy · 4–6 reps'],['muscle','Muscle','8–12 reps'],['endur','Endurance','15–20 reps']];
 const EFF=[['easy','Easy','RPE 6'],['mod','Moderate','RPE 7–8'],['hard','Hard','last set to failure']];
@@ -176,7 +176,8 @@ const JOINT={knee:/sprint|\brun\b|squat|lunge|jump|pistol|nordic|step|split|boun
 function needs(k,e,n){const r=[];
   if(/\bring/.test(n))r.push('rings');
   else if(/bodyweight row|inverted row|pull-?ups?|pullup|chin|hanging|muscle[\s-]?up|pole vault|\bdips?\b|l[- ]?sit|toes to bar|knees to elbow/.test(n))r.push('bar|rings');
-  if(/sandbag|bear hug/.test(n)||k.startsWith('sb_'))r.push('sb');
+  if(/\bmace\b/.test(n))r.push('mace');
+  else if(/sandbag|bear hug/.test(n)||k.startsWith('sb_'))r.push('sb');
   else if(/goblet/.test(n))r.push('kb|db');
   else if(/kettlebell|\bkb\b|swing|get-?up|windmill|crush curl|suitcase hold/.test(n))r.push('kb');
   else if(/\bdb\b|dumbbell|scott curl|zottman|lying unsupported|lateral raise|reverse fly|rear delt/.test(n))r.push('db');
@@ -188,7 +189,7 @@ function needs(k,e,n){const r=[];
   if(/\bband/.test(n)||e.c==='banded')r.push('band');
   if(/\berg\b|bike|assault|airdyne|ski/.test(n))r.push('cardio');
   if(/back extension|roman chair|hyper/.test(n))r.push('mach');
-  const named=r.some(x=>/db|kb|bb|sb|mach/.test(x));
+  const named=r.some(x=>/db|kb|bb|sb|mach|mace/.test(x));
   if(!named&&['weighted','cal','carry','power'].includes(e.c))r.push('db|kb|bb|sb');
   return r;}
 function rolesOf(e,n,pat,region){const R=new Set();
@@ -304,6 +305,7 @@ function rx(m,o,i,opt){const g=gpOf(o);
   const timed=m.hold||m.region==='cond'||m.region==='carry';
   if(m.hold)reps=o.goal==='endur'?'45 s':'30 s';
   else if(m.region==='carry')reps='30 m';
+  else if((EX[m.k]||{}).u==='min'){reps=`${o.time<=20?2:3} min`;sets=Math.min(Math.max(sets,2),3);tips.push('steady, 1 min easy between');}
   else if(m.region==='cond'){reps='30 s';sets=Math.max(sets,5);tips.push('hard, then 30–60 s easy');}
   else if(o.goal==='power'&&m.roles.has('plyo'))reps='3–5';
   let s=`${sets} × ${reps}`;
@@ -470,7 +472,7 @@ function parseToday(t){const s=t.toLowerCase(),p={};
     ['core',/core|abs|mage|bål/],['cond',/sweat|svett|cardio|kondition|conditioning|flås/],['full',/full|hela kroppen|helkropp/]];
   for(const[k,re]of F)if(re.test(s)){p.focus=k;break;}
   if(/hotel|hotell|nothing|ingenting|no equipment|utan utrustning|bodyweight|kroppsvikt|travel|resa/.test(s))p.eq=['bw'];
-  else{const eq=[];[['db',/dumbbell|hantel|hantlar|\bdb\b/],['kb',/kettlebell|\bkb\b/],['bb',/barbell|skivstång|stång|gym/],['bar',/pull-?up bar|räcke|chins/],['rings',/rings|ringar/],['band',/band/],['mach',/cable|kabel|maskin|gym/],['sb',/sandbag|sandsäck/]]
+  else{const eq=[];[['db',/dumbbell|hantel|hantlar|\bdb\b/],['kb',/kettlebell|\bkb\b/],['bb',/barbell|skivstång|stång|gym/],['bar',/pull-?up bar|räcke|chins/],['rings',/rings|ringar/],['band',/band/],['mach',/cable|kabel|maskin|gym/],['sb',/sandbag|sandsäck/],['mace',/\bmace|klubba|stålklubba/]]
     .forEach(([k,re])=>{if(re.test(s))eq.push(k);});if(eq.includes('bb')&&/gym|rack|ställning/.test(s))eq.push('rack');if(eq.length)p.eq=['bw',...eq];}
   const av=[];[['knee',/knä|knee/],['back',/rygg|back/],['shoulder',/axel|shoulder/],['wrist',/handled|wrist/]].forEach(([k,re])=>{if(re.test(s)&&/(sore|ont|pain|skad|öm|injur|stel|tweak)/.test(s))av.push(k);});if(av.length)p.avoid=av;
   if(/sweat|svett|flås|pulse|puls|cardio|kondition/.test(s)){p.goal='endur';p.fmt='circuit';}
@@ -678,7 +680,8 @@ renderHome=function(){syncProgs();_renderHome();
   document.querySelectorAll('#progList [data-p]').forEach(b=>{const P=progById(b.dataset.p),nm=b.querySelector('b');
     if(P&&nm&&!b.querySelector('.ptags'))nm.insertAdjacentHTML('afterend',tagHTML(P));});};
 /* programs grouped by creator, collapsed, with a type filter on top */
-const OWN=()=>window.BLOCK_OWN_GROUP||'Your own builds';
+/* sessions and programs made in the generator or the builder */
+const OWN=()=>'Own builds';window.BLOCK_BUILD_GROUP='Own builds';
 const LSG='block-open-groups';let PFILT='';
 const openSet=()=>{try{const s=new Set(JSON.parse(localStorage.getItem(LSG)||'null')||[OWN()]);if(s.delete('Your own builds'))s.add(OWN());return s;}catch(e){return new Set([OWN()]);}};
 const keepOpen=s=>{try{localStorage.setItem(LSG,JSON.stringify([...s]));}catch(e){}};
@@ -686,12 +689,14 @@ const rowHTML=(P,ey)=>`<button class="hrowp" data-p="${P.id}"><span><em class="e
   <span class="n">${progDone(P)}/${progTotal(P)}</span><span class="chev">›</span></button>`;
 function renderGroups(){const box=document.getElementById('progList');if(!box)return;
   const cur=box.querySelector('.hcur'),list=PROGRAMS.filter(P=>(P.id!=='custom'||(S.custom&&S.custom.length))&&P.id!==S.active);
-  const prim={};list.forEach(P=>{const t=typesOf(P)[0];if(t&&t!=='Own sessions'&&t!=='Made by you')prim[t]=(prim[t]||0)+1;});
-  const types=Object.keys(prim).sort((a,b)=>prim[b]-prim[a]).slice(0,9);if(PFILT&&!types.includes(PFILT))PFILT='';
+  const CATS=['Handstand','Running','Mace'];/* categories that win over a program's first tag */
+  const prim={};list.forEach(P=>{const tt=typesOf(P),t=CATS.find(c=>tt.includes(c))||tt[0];if(t&&t!=='Own sessions'&&t!=='Made by you')prim[t]=(prim[t]||0)+1;});
+  const types=Object.keys(prim).sort((a,b)=>prim[b]-prim[a]).slice(0,9);CATS.forEach(c=>{if(prim[c]&&!types.includes(c))types.push(c);});if(PFILT&&!types.includes(PFILT))PFILT='';
   let h=`<div class="pfilt" role="group" aria-label="Filter programs by type"><button class="${PFILT?'':'on'}" data-t="">All · ${list.length}</button>${types.map(t=>`<button class="${PFILT===t?'on':''}" data-t="${esc(t)}">${esc(t)} · ${prim[t]}</button>`).join('')}</div>`;
   if(PFILT){h+=`<div class="hlist">${list.filter(P=>typesOf(P).includes(PFILT)).map(P=>rowHTML(P,`${P.group||'Other'} · ${progTotal(P)} sessions`)).join('')}</div>`;}
   else{const g={};list.forEach(P=>{const k=P.gen||P.id==='custom'?OWN():(P.group||'Other');(g[k]=g[k]||[]).push(P);});
-    const names=Object.keys(g).sort((a,b)=>a===OWN()?-1:b===OWN()?1:a.localeCompare(b)),open=openSet();
+    const top=[OWN(),window.BLOCK_OWN_GROUP],rk=n=>{const i=top.indexOf(n);return i<0?9:i;};
+    const names=Object.keys(g).sort((a,b)=>rk(a)-rk(b)||a.localeCompare(b)),open=openSet();
     h+=names.map(n=>{const on=open.has(n),ps=g[n],done=ps.reduce((a,P)=>a+progDone(P),0),blurb=(window.BLOCK_GROUPS||{})[n];
       return`<section class="pgrp${on?' on':''}"><button class="pgh" data-g="${esc(n)}" aria-expanded="${on}"><span><b>${esc(n)}</b><small>${ps.length} program${ps.length>1?'s':''}${done?` · ${done} sessions done`:''}</small></span><span class="chev">›</span></button>
         ${on?`${blurb&&blurb.blurb?`<p class="pgb">${esc(blurb.blurb)}</p>`:''}<div class="hlist">${ps.map(P=>rowHTML(P)).join('')}</div>`:''}</section>`;}).join('');}
