@@ -42,5 +42,34 @@ const css2=`
 @media (hover:hover) and (pointer:fine){.adb:hover{border-color:#fff;color:#fff}}
 .adb:active,.xr:active{transform:scale(.98)}
 .adb,.xr{transition:transform 140ms ease-out}`;
-const st=document.createElement('style');st.textContent=css+css2;document.head.appendChild(st);
+const st=document.createElement('style');st.textContent=css+css2+`
+.sltools{margin:6px 0 14px!important}
+#sessionList .sltools+.grp{margin-top:6px}`;document.head.appendChild(st);
+
+/* ---------- opening things: short, ease-out, interruptible; nothing for reduced motion ---------- */
+const RM=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EASE='cubic-bezier(.23,1,.32,1)';
+function grow(el,h0,h1,dur=280){if(RM()||!el||!h0||h0===h1)return;
+  const bs=el.style.boxSizing,ov=el.style.overflow;el.style.boxSizing='border-box';el.style.overflow='hidden';
+  const a=el.animate([{height:h0+'px'},{height:h1+'px'}],{duration:dur,easing:EASE});
+  const done=()=>{el.style.boxSizing=bs;el.style.overflow=ov;};a.onfinish=done;a.oncancel=done;}
+function fadeIn(el,dy=6,dur=240){if(RM()||!el)return;
+  el.animate([{opacity:0,transform:`translateY(${dy}px)`},{opacity:1,transform:'none'}],{duration:dur,easing:EASE});}
+/* reveal a block that just appeared: height from 0 plus a fade */
+window.blockReveal=el=>{if(RM()||!el)return;const h=el.offsetHeight;if(!h)return;
+  const ov=el.style.overflow;el.style.overflow='hidden';
+  const a=el.animate([{height:'0px',opacity:0},{height:h+'px',opacity:1}],{duration:280,easing:EASE});
+  const done=()=>{el.style.overflow=ov;};a.onfinish=done;a.oncancel=done;};
+window.blockFade=el=>fadeIn(el,6,220);
+/* a session card opening or closing grows to its new height; its details fade in */
+if(typeof slSet==='function'){const _sl=slSet;
+  slSet=function(P,d,w,open){const was=w.classList.contains('open'),h0=w.isConnected?w.offsetHeight:0;
+    _sl.apply(this,arguments);if(!h0||was===open)return;
+    grow(w,h0,w.offsetHeight,open?300:220);if(open)fadeIn(w.querySelector('.sdet'),-4,280);};}
+/* switching screens: the new one fades up a few pixels. Views with fixed parts (workout, player) only fade,
+   since a transform would move their fixed bars during the animation */
+{let last=null;const _sh=show;
+  show=function(v){const same=v===last;_sh(v);last=v;if(same||RM())return;const el=document.getElementById('v-'+v);if(!el)return;
+    if(v==='log'||v==='play')el.animate([{opacity:0},{opacity:1}],{duration:180,easing:'ease-out'});else fadeIn(el,8,240);};}
+
 })();

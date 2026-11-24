@@ -53,6 +53,11 @@ const cfg=()=>{try{return JSON.parse(localStorage.getItem(LS)||'{}');}catch(e){r
 const setCfg=c=>{try{localStorage.setItem(LS,JSON.stringify(c));}catch(e){}};
 const CLAUDE_MODELS=[['claude-opus-5-5','Claude Opus 5.5 · best'],['claude-sonnet-5-5','Claude Sonnet 5.5 · faster'],['claude-haiku-5-5','Claude Haiku 5.5 · cheapest']];
 const ready=()=>{const c=cfg();return !!(c.key&&c.provider);};
+/* the key tells which provider it is for: Anthropic keys start sk-ant-, OpenAI keys sk- (sk-proj-, sk-svcacct-) */
+const provOf=k=>/^sk-ant-/.test(k)?'claude':/^sk-/.test(k)?'openai':null;
+/* a key saved under the wrong provider before detection existed is moved to the right one */
+{const c=cfg(),d=c.key&&provOf(c.key);if(d&&d!==c.provider){c.provider=d;setCfg(c);}}
+const OPENAI_MODELS=[['gpt-5-mini','GPT-5 mini · fast and cheap'],['gpt-5','GPT-5 · best']];
 let SDK=null;
 async function claudeClient(key){
   if(!SDK){const m=await import('https://esm.sh/@anthropic-ai/sdk@0.136.0');SDK=m.default||m.Anthropic;}
@@ -108,23 +113,28 @@ const busy=(b,on,txt)=>{if(!b)return;b.disabled=on;if(txt)b.textContent=txt;};
 const errHTML=e=>`<p class="dim">${esc2(e.message||e)}</p>`;
 
 /* ---------- settings ---------- */
-function settingsHTML(){const c=cfg(),p=c.provider||'claude';
+function settingsHTML(draft,note){const c=cfg(),p=c.provider||'claude',key=draft!=null?draft:(c.key||''),om=c.omodel||'gpt-5-mini';
   return`<p class="grp">AI coach</p><p class="sub" style="margin:0">Connect Claude or ChatGPT with an API key from console.anthropic.com or platform.openai.com. The key stays on this device and is only sent to the provider you pick. A chat subscription login can't be used by other apps, so an API key is the way in.</p>
     <div class="seg"><button data-p="claude" class="${p==='claude'?'on':''}">Claude</button><button data-p="openai" class="${p==='openai'?'on':''}">ChatGPT</button></div>
-    <input id="aiKey" type="password" autocomplete="off" placeholder="${p==='claude'?'sk-ant-…':'sk-…'}" value="${esc2(c.key||'')}" aria-label="API key">
+    <input id="aiKey" type="password" autocomplete="off" placeholder="${p==='claude'?'sk-ant-…':'sk-proj-…'}" value="${esc2(key)}" aria-label="API key">
     ${p==='claude'?`<select id="aiModel" aria-label="Model">${CLAUDE_MODELS.map(([v,l])=>`<option value="${v}" ${v===(c.model||'claude-opus-5-5')?'selected':''}>${l}</option>`).join('')}</select>`
-      :`<input id="aiOModel" placeholder="Model, e.g. gpt-5-mini" value="${esc2(c.omodel||'gpt-5-mini')}" aria-label="OpenAI model">`}
+      :`<select id="aiOModel" aria-label="Model">${(OPENAI_MODELS.some(([v])=>v===om)?OPENAI_MODELS:[...OPENAI_MODELS,[om,om]]).map(([v,l])=>`<option value="${esc2(v)}" ${v===om?'selected':''}>${esc2(l)}</option>`).join('')}</select>`}
     <div class="row"><button class="aibtn" id="aiSave">Save</button><button class="aibtn ghost" id="aiTest">Test</button>${c.key?'<button class="aibtn ghost" id="aiForget">Forget key</button>':''}</div>
-    <p class="aistat" id="aiStat" role="status">${c.key?`Connected to ${p==='claude'?'Claude':'ChatGPT'}.`:'Not connected. Everything still works, with simpler suggestions.'}</p>`;}
-function mountSettings(){const v=document.getElementById('v-settings');if(!v)return;
+    <p class="aistat" id="aiStat" role="status">${note?esc2(note):c.key?`Connected to ${p==='claude'?'Claude':'ChatGPT'}.`:'Not connected. Everything still works, with simpler suggestions.'}</p>`;}
+function mountSettings(draft,note){const v=document.getElementById('v-settings');if(!v)return;
   let box=document.getElementById('aiSet');if(!box){box=document.createElement('div');box.id='aiSet';box.className='aiset';
     const r=document.getElementById('resetAll');v.insertBefore(box,r);}
-  box.innerHTML=settingsHTML();
+  box.innerHTML=settingsHTML(draft,note);
   box.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const c=cfg();c.provider=b.dataset.p;if(c.key&&!document.getElementById('aiKey').value)delete c.key;setCfg(c);mountSettings();});
   const $=id=>document.getElementById(id);
-  $('aiSave').onclick=()=>{const c=cfg();c.provider=c.provider||'claude';c.key=$('aiKey').value.trim();
+  /* pasting a key switches to its provider, so a ChatGPT key never goes to Anthropic or the other way round */
+  const detect=()=>{const k=$('aiKey').value.trim(),d=provOf(k),c=cfg();
+    if(d&&d!==(c.provider||'claude')){c.provider=d;setCfg(c);mountSettings(k,`That is ${d==='openai'?'an OpenAI':'an Anthropic'} key, so ${d==='openai'?'ChatGPT':'Claude'} is picked. Tap Save.`);
+      const n=$('aiKey');n.focus();n.setSelectionRange(n.value.length,n.value.length);return true;}return false;};
+  $('aiKey').oninput=detect;
+  $('aiSave').onclick=()=>{detect();const c=cfg();c.provider=c.provider||'claude';c.key=$('aiKey').value.trim();
     if($('aiModel'))c.model=$('aiModel').value;if($('aiOModel'))c.omodel=$('aiOModel').value.trim();setCfg(c);mountSettings();};
-  $('aiTest').onclick=async()=>{const c=cfg();c.provider=c.provider||'claude';c.key=$('aiKey').value.trim()||c.key;
+  $('aiTest').onclick=async()=>{detect();const c=cfg();c.provider=c.provider||'claude';c.key=$('aiKey').value.trim()||c.key;
     if($('aiModel'))c.model=$('aiModel').value;if($('aiOModel'))c.omodel=$('aiOModel').value.trim();setCfg(c);
     $('aiStat').textContent='Testing…';
     try{const t=await ask({system:'Reply with exactly: OK',prompt:'Say OK.',maxTokens:200});$('aiStat').textContent=/ok/i.test(t)?'It works.':'Connected, but the reply was odd: '+t.slice(0,60);}

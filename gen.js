@@ -699,7 +699,8 @@ function renderGroups(){const box=document.getElementById('progList');if(!box)re
   const openP=P=>{S.prog=P.id;progTab='sessions';save();show('program');renderProgram();};
   box.querySelectorAll('.hrowp[data-p]').forEach(b=>b.onclick=()=>openP(progById(b.dataset.p)));
   if(cur)cur.onclick=()=>openP(progById(cur.dataset.p));
-  box.querySelectorAll('.pgh').forEach(b=>b.onclick=()=>{const s=openSet(),n=b.dataset.g;if(s.has(n))s.delete(n);else s.add(n);keepOpen(s);renderHome();});
+  box.querySelectorAll('.pgh').forEach(b=>b.onclick=()=>{const s=openSet(),n=b.dataset.g,opening=!s.has(n);if(s.has(n))s.delete(n);else s.add(n);keepOpen(s);renderHome();
+    if(opening&&window.blockReveal){const g=[...document.querySelectorAll('.pgrp')].find(x=>x.querySelector('.pgh').dataset.g===n);blockReveal(g&&g.querySelector('.hlist'));}});
   box.querySelectorAll('.pfilt button').forEach(b=>b.onclick=()=>{PFILT=b.dataset.t;renderHome();});}
 const _renderProgram=renderProgram;
 renderProgram=function(){_renderProgram();const P=progById(S.prog);
@@ -718,6 +719,6 @@ function render(){window.scrollTo(0,0);
   document.getElementById('genEy').textContent=G.step===3?'New program':'Own session';
   document.getElementById('genBack').textContent=G.step===1?'‹ Home':G.step===2&&G.key?'‹ Session':'‹ Back';
   if(G.step===1)renderAsk();else if(G.step===2)renderSuggest();else renderProgForm();
-  window.blockChatLift&&blockChatLift();}
+  window.blockChatLift&&blockChatLift();window.blockFade&&blockFade(body);}
 if(!document.getElementById('v-home').classList.contains('hide'))renderHome();
 })();
