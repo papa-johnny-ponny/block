@@ -71,10 +71,22 @@ const css=`
 .gmore .gsec:first-of-type{border-top:0;margin-top:0;padding-top:0}
 @media (prefers-reduced-motion:reduce){.gchip,.gsel svg,.gmore>summary::after{transition:none}}
 .ggo{width:100%;margin-top:28px;min-height:52px}
+/* the main actions stay in reach: a bar stuck to the bottom of the screen */
+.gbar{position:sticky;bottom:0;z-index:60;display:flex;gap:10px;margin:72px -16px 0;padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 14px);
+  background:linear-gradient(to top,#000 72%,rgba(0,0,0,0))}
+.gbar .pgo,.gbar .gout{text-align:center;display:grid;place-items:center}
+#v-gen #genBody:has(.gbar){padding-bottom:0!important}
+#v-gen.wrap:has(.gbar){padding-bottom:0}
+.gbar .pgo{flex:1.35;margin:0;min-height:52px;padding:0 12px;border-radius:16px;transition:transform 140ms ease-out}
+.gbar .gout{flex:1;min-height:52px;padding:0 12px;border-radius:16px;background:none;border:1.5px solid rgba(255,255,255,.32);color:#fff;font:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:transform 140ms ease-out,border-color 140ms ease}
+.gbar .pgo:active,.gbar .gout:active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){.gbar .gout:hover{border-color:#fff}}
+.gkeep{display:flex;gap:8px;margin-top:14px}.gkeep .btn-s{flex:1;padding:11px 10px}
+.glinks{display:flex;justify-content:center;gap:22px;margin-top:16px}.glinks .plink{margin:0}
 .gwide{width:100%;margin-top:10px}
 .gtitle{width:100%;box-sizing:border-box;font-size:22px;font-weight:700;margin:0 0 6px}
 .gwhy{color:var(--dim);font-size:14px;line-height:1.5;margin:10px 0 0}
-.ggrp{margin:22px 0 2px;color:var(--dim);font-size:13px;font-weight:600}
+.ggrp{margin:28px 0 2px;padding-top:20px;border-top:1px solid var(--line);color:#fff;font-size:18px;font-weight:700;letter-spacing:0;text-transform:none}
 .grow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
 .gex{flex:1;display:flex;align-items:center;gap:12px;min-width:0;padding:0;background:none;border:0;color:#fff;font:inherit;text-align:left;cursor:pointer}
 .gex>span:last-child{min-width:0}
@@ -429,8 +441,8 @@ function renderAsk(){
   body.innerHTML=`<h2 class="gh">What do you have today?</h2><p class="sub">Describe it in a sentence, or tap your answers. Your last answers stay picked.</p>
     <div class="gq"><textarea id="gTell" rows="2" class="gtitle" style="font-size:16px;font-weight:500;min-height:60px" placeholder="e.g. 20 min in a hotel room, sore knee, want to sweat"></textarea>
     <button class="btn-s gwide" id="gTellGo">Build it from this</button><p class="gmsg" id="gTellMsg" role="status"></p></div>
-    ${questions(G.o,true)}<button class="pgo ggo" id="gGo">Suggest a session</button>
-    <button class="plink" id="gSelf" style="display:block;margin:16px auto 0">Build it myself instead</button>`;
+    ${questions(G.o,true)}
+    <div class="gbar"><button class="gout" id="gSelf">Build it myself</button><button class="pgo" id="gGo">Suggest a session</button></div>`;
   wire(G.o);
   body.querySelector('#gGo').onclick=()=>{S.genPrefs=JSON.parse(JSON.stringify(G.o));save();
     G.picks=buildPicks(G.o,G.seed);G.title=autoTitle(G.o);G.step=2;render();};
@@ -510,10 +522,9 @@ function renderSuggest(){const o=G.o,items=assemble(G.picks,o);
     if(G.pickOpen===it._p)h+=pickerHTML(it._p);});
   h+=`<p class="gmsg" id="gMsg" role="status"></p>
     ${FAST(o)?'':'<button class="btn-s gwide" id="gAdd">+ Add an exercise</button>'}
-    <div class="pacts" style="margin-top:18px"><button class="btn-s" id="gShuf">Shuffle</button><button class="pgo" id="gStart">Start session</button></div>
-    <button class="btn-s gwide" id="gSave">${G.key?'Save changes':'Save to own sessions'}</button>
-    <button class="btn-s gwide" id="gProg">Make it a program</button>
-    <div style="display:flex;justify-content:center;gap:18px;margin-top:14px"><button class="plink" id="gAsk">Change answers</button><button class="plink" id="gSelf">Build it myself</button></div>`;
+    <section class="gsec"><h3>Keep it</h3><div class="gkeep"><button class="btn-s" id="gSave">${G.key?'Save changes':'Save to own sessions'}</button><button class="btn-s" id="gProg">Make it a program</button></div>
+    <div class="glinks"><button class="plink" id="gAsk">Change answers</button><button class="plink" id="gSelf">Build it myself</button></div></section>
+    <div class="gbar"><button class="gout" id="gShuf">Shuffle</button><button class="pgo" id="gStart">Start session</button></div>`;
   body.innerHTML=h;
   const $=id=>body.querySelector('#'+id),msg=t=>{$('gMsg').textContent=t;};
   $('gTitle').oninput=e=>{G.title=e.target.value;};
@@ -576,7 +587,7 @@ function renderProgForm(){const p=G.p;
     ${sec('Progression',q('How it progresses',chips('prog',PROG,p.prog))+q('Autoregulation',chips('auto',AUTO,p.auto))+q('Deload',chips('deload',DELOAD,p.deload)))}
     <div class="gsum" id="gpSum">${summary()}</div>
     <details class="gmore"><summary><span>Session answers<small>Time, equipment, goal and more, same as today</small></span></summary>${questions(G.o,false)}</details>
-    <button class="pgo ggo" id="gpGo">Create program</button>`;
+    <div class="gbar"><button class="pgo" id="gpGo">Create program</button></div>`;
   wire(G.p,()=>{body.querySelector('#gpSum').innerHTML=summary();body.querySelector('#gpName').placeholder=autoProgName();});
   /* the session answers inside "Same answers" belong to G.o, not the program settings */
   wireInto(body.querySelector('.gmore'),G.o);
@@ -706,6 +717,7 @@ document.getElementById('sessEdit').onclick=()=>{const d=(S.custom||[]).find(x=>
 function render(){window.scrollTo(0,0);
   document.getElementById('genEy').textContent=G.step===3?'New program':'Own session';
   document.getElementById('genBack').textContent=G.step===1?'‹ Home':G.step===2&&G.key?'‹ Session':'‹ Back';
-  if(G.step===1)renderAsk();else if(G.step===2)renderSuggest();else renderProgForm();}
+  if(G.step===1)renderAsk();else if(G.step===2)renderSuggest();else renderProgForm();
+  window.blockChatLift&&blockChatLift();}
 if(!document.getElementById('v-home').classList.contains('hide'))renderHome();
 })();

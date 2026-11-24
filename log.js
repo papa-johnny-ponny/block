@@ -316,7 +316,7 @@ function setMenu(C,x,id,btn,redraw){
         <div class="smline"><span>RPE</span><div class="smopts">${[6,7,7.5,8,8.5,9,9.5,10].map(v=>`<button data-rpe="${v}" class="${r.rpe===v?'on':''}">${v}</button>`).join('')}</div></div>
         <div class="smline"><span>Reps in reserve</span><div class="smopts">${[0,1,2,3].map(v=>`<button data-rir="${v}" class="${r.rir===v?'on':''}">${v===3?'3+':v}</button>`).join('')}</div></div>
         <div class="smline" style="display:block"><span>Set comment</span><input class="sminput" id="smNote" style="margin-top:8px" placeholder="e.g. grip slipped on the last rep" value="${esc(r.note||'')}"></div>
-        <div class="smline"><span>Move set<small>down or up</small></span><div class="smopts"><button data-mv="1" aria-label="Move down">↓</button><button data-mv="-1" aria-label="Move up">↑</button></div></div>`:needLog,true);}
+        <div class="smline"><span>Move set<small>down or up</small></span><div class="smopts"><button data-mv="1" aria-label="Move down">${ICON.down}</button><button data-mv="-1" aria-label="Move up">${ICON.up}</button></div></div>`:needLog,true);}
     else if(v==='video'){h=panel('Video',r?`<p class="smhint" style="margin-top:0">Saved on this device only, next to this set.</p>
         <div id="smVid"></div><label class="btn-s" style="display:block;text-align:center;margin-top:12px;cursor:pointer">${r.vid?'Replace video':'Choose or record a video'}<input type="file" accept="video/*" id="smFile" hidden></label>
         ${r.vid?'<button class="smi del" data-s="vdel" style="padding-left:0">Remove video</button>':''}`:needLog,true);}
@@ -372,7 +372,7 @@ function render(){
   let h=`<div class="lgtop"><button class="pbtn" id="lgX" aria-label="Close session">×</button>
     <div class="lgtt"><b>${esc(LG.B.title)}</b><span id="lgTime"></span></div>
     <button class="pbtn" id="lgGuide" aria-label="Guided mode" title="Guided mode"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
-    <button class="pbtn lgok" id="lgFin" aria-label="Finish session">✓</button></div>
+    <button class="pbtn lgok" id="lgFin" aria-label="Finish session">${ICON.check}</button></div>
     <p class="eyebrow" style="margin-top:14px">${esc(LG.B.eyebrow||'')}</p>`;
   LG.B.blocks.forEach((b,bi)=>{
     const p=b.pr,timed=p.mode==='clock'||p.mode==='interval';
@@ -399,11 +399,11 @@ function card(x){
   if(e.skip)return h+`</section>`;
   if(D){const hist=S.score[k]||[],t=target(hist,D.score),u=UNITS[D.score];
     h+=`<div class="lgsc"><input type="number" inputmode="decimal" data-a="score" placeholder="${hist.length?`Last ${hist[hist.length-1]} ${u}${t?` · target ${t}`:''}`:`Total in ${u}`}" aria-label="Score in ${u}">
-      <button class="btn-s on" data-a="scoresave">${e.done?'Saved ✓':'Save'}</button>
+      <button class="btn-s on" data-a="scoresave">${e.done?`Saved ${ICON.check}`:'Save'}</button>
       ${D.clock?`<button class="btn-s" data-a="clock" data-secs="${D.clock*60}">${D.clock}:00</button>`:''}</div>`;
     return h+`</section>`;}
   if(P.sets>0)return h+rowsHTML(LG,x,ex,P)+`</section>`;
-  h+=`<div class="lgone ${e.done?'done':''}"><button class="lgn" data-a="tick" aria-label="${e.done?'Undo':'Mark done'}">${e.done?'✓':''}</button><p>${esc(P.label||'Tick when done')}</p>
+  h+=`<div class="lgone ${e.done?'done':''}"><button class="lgn" data-a="tick" aria-label="${e.done?'Undo':'Mark done'}">${e.done?ICON.check:''}</button><p>${esc(P.label||'Tick when done')}</p>
     ${P.minutes?`<button class="btn-s" data-a="clock" data-secs="${P.minutes*60}">Start ${P.minutes}:00</button>`:'<span></span>'}</div>`;
   return h+`</section>`;
 }
@@ -517,7 +517,7 @@ renderSheet=function(){_renderSheet();
     +chip('page','Stats & records')+chip('p:history','History',SHP==='history')+chip('p:notes','Notes',SHP==='notes')
     +chip('p:rest',`Rest ${S.rest<120?S.rest+' s':S.rest/60+' min'}`,SHP==='rest')
     +(nx?chip('ssnext','Next · '+esc(exFor(nx.item,logKey(prog,sessKey,nx.idx)).n))+chip('ssout','Leave superset'):(nextX&&noGrp?chip('ssin','Superset with next'):''))
-    +(P.sets>0?chip('broke',e.broke?'Form broke ✓':'Form broke',e.broke):'')
+    +(P.sets>0?chip('broke',e.broke?`Form broke ${ICON.check}`:'Form broke',e.broke):'')
     +(densFn?chip('dens','Density'):'')
     +chip('skip',e.skip?'Skipped · undo':'Skip today',e.skip)
     +chip('p:video','Video link',SHP==='video')
@@ -534,7 +534,7 @@ renderSheet=function(){_renderSheet();
   if(e.broke)h+=`<p class="shhint">Form broke. The weight stays where it is next time.</p>`;
   h+=e.skip?`<p class="sub" style="margin:12px 0 0">Skipped today.</p>`
     :(P.sets>0?`<div class="shrows">${rowsHTML(C,x,ex,P)}</div>`
-      :`<div class="shrows"><div class="lgone ${e.done?'done':''}" style="border-top:0"><button class="lgn" data-a="tick">${e.done?'✓':''}</button><p>${esc(P.label||'Tick when done')}</p>${P.minutes?`<button class="btn-s" data-a="clock" data-secs="${P.minutes*60}">Start ${P.minutes}:00</button>`:'<span></span>'}</div></div>`);
+      :`<div class="shrows"><div class="lgone ${e.done?'done':''}" style="border-top:0"><button class="lgn" data-a="tick" aria-label="${e.done?'Undo':'Mark done'}">${e.done?ICON.check:''}</button><p>${esc(P.label||'Tick when done')}</p>${P.minutes?`<button class="btn-s" data-a="clock" data-secs="${P.minutes*60}">Start ${P.minutes}:00</button>`:'<span></span>'}</div></div>`);
   const wrap=document.createElement('div');wrap.className='shb';wrap.innerHTML=h;
   body.innerHTML='';body.append(wrap);
   if(rm&&SHP==='rm')document.getElementById('shRm').append(rm);
@@ -568,8 +568,8 @@ function restOff(){RT=null;restEl.classList.remove('on','hot');}
 function paintRest(){const t=RT;if(!t)return;
   const el=t.acc+(t.since?Date.now()-t.since:0),rem=Math.max(0,t.total-el),s=Math.ceil(rem/1000);
   restEl.innerHTML=`<i class="bar" style="width:${Math.min(100,el/t.total*100)}%"></i>
-    <button data-r="reset" aria-label="Restart timer">↺</button><span class="rt"><b>${fmtT(s)}</b><small>${rem?(t.since?t.label:'Paused'):(t.label==='Rest'?'Rest over':'Time')}</small></span>
-    <button data-r="pause" aria-label="${t.since?'Pause':'Resume'}">${t.since?'❚❚':'▶'}</button><button data-r="x" aria-label="Hide timer">×</button>`;
+    <button data-r="reset" aria-label="Restart timer">${ICON.reset}</button><span class="rt"><b>${fmtT(s)}</b><small>${rem?(t.since?t.label:'Paused'):(t.label==='Rest'?'Rest over':'Time')}</small></span>
+    <button data-r="pause" aria-label="${t.since?'Pause':'Resume'}">${t.since?ICON.pause:ICON.play}</button><button data-r="x" aria-label="Hide timer">×</button>`;
   restEl.classList.toggle('hot',!!t.since&&rem<=10000);
   restEl.querySelector('[data-r=reset]').onclick=()=>{t.acc=0;t.since=Date.now();t.fired=false;paintRest();};
   restEl.querySelector('[data-r=pause]').onclick=()=>{if(t.since){t.acc+=Date.now()-t.since;t.since=null;}else{if(t.acc>=t.total){t.acc=0;t.fired=false;}t.since=Date.now();}paintRest();};
@@ -623,7 +623,7 @@ function exRowHTML(prog,key,x,size,withEq,right){
   const nt=[x.sp.nt,e.broke?'form broke':'',e.skip?'skipped today':''].filter(Boolean).join(' · ');
   const rx=[pl.n?`${pl.n} × ${pl.t||''}`.replace(/ × $/,' sets'):pl.t].filter(Boolean).join('');
   return `<span class="xr-in" style="display:contents">${thumbHTML(ex,size)}<span class="xm"><b>${esc(ex.n)}</b>
-    <span class="xl">${withEq&&x.item.id?`<span class="xeq" data-eq="1">${esc(guessEq({...ex,key:x.item.id}))} ⇅</span>`:''}<span class="xrx">${esc(rx)}</span></span>
+    <span class="xl">${withEq&&x.item.id?`<span class="xeq" data-eq="1">${esc(guessEq({...ex,key:x.item.id}))} ${ICON.swap}</span>`:''}<span class="xrx">${esc(rx)}</span></span>
     ${nt?`<small>${esc(nt)}</small>`:''}</span>${right||''}</span>`;
 }
 
@@ -663,10 +663,10 @@ paintItems=function(box,prog,sessKey,items){
     const ri=real.indexOf(x),g=ss[idx],pg=ri>0?ss[real[ri-1].idx]:null,ng=ri<real.length-1?ss[real[ri+1].idx]:null;
     const w=document.createElement('div');w.className='ssw'+(g?' on':'')+(g&&pg===g?' mid':'')+(g&&ng===g?' cont':'');
     if(g&&pg!==g)w.innerHTML='<p class="sslab">Superset</p>';
-    const right=`<span class="prog">${e.done?'✓':(P.sets>0&&e.sets?`${Math.min(e.sets,P.sets)}/${P.sets}`:'')}</span>`;
+    const right=`<span class="prog">${e.done?ICON.check:(P.sets>0&&e.sets?`${Math.min(e.sets,P.sets)}/${P.sets}`:'')}</span>`;
     if(edit){const c=document.createElement('div');c.className='xedit';
-      c.innerHTML=`<div class="xr">${exRowHTML(prog,sessKey,x,60,true,'')}</div><span class="ord"><button data-d="-1" ${ri===0?'disabled':''} aria-label="Move up">↑</button>
-        <button data-d="1" ${ri===real.length-1?'disabled':''} aria-label="Move down">↓</button></span>`;
+      c.innerHTML=`<div class="xr">${exRowHTML(prog,sessKey,x,60,true,'')}</div><span class="ord"><button data-d="-1" ${ri===0?'disabled':''} aria-label="Move up">${ICON.up}</button>
+        <button data-d="1" ${ri===real.length-1?'disabled':''} aria-label="Move down">${ICON.down}</button></span>`;
       c.querySelectorAll('.ord button').forEach(b=>b.onclick=()=>{const o=real.map(r=>r.idx),j=ri+ +b.dataset.d;
         [o[ri],o[j]]=[o[j],o[ri]];S.order[sk]=o;save();renderSession();});
       w.appendChild(c);}

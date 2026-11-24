@@ -5,13 +5,13 @@
    key a small local reader handles the common commands. */
 (function(){
 const css=`
-.aibub{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:70;width:58px;height:58px;border-radius:50%;
+.aibub{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px + var(--gbar,0px));z-index:70;width:58px;height:58px;border-radius:50%;
   display:grid;place-items:center;background:#141416;border:1px solid var(--line);color:var(--accent);box-shadow:0 10px 30px rgba(0,0,0,.5);cursor:pointer;
   transition:transform .2s cubic-bezier(.2,.8,.2,1),opacity .2s}
 .aibub:active{transform:scale(.94)}
 .aibub.off{opacity:0;pointer-events:none;transform:scale(.8)}
-.aichat{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:80;max-width:620px;margin:0 auto;
-  transform:translateY(calc(100% + 40px));transition:transform 300ms cubic-bezier(.32,.72,0,1);pointer-events:none}
+.aichat{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px + var(--gbar,0px));z-index:80;max-width:620px;margin:0 auto;
+  transform:translateY(calc(100% + 40px + var(--gbar,0px)));transition:transform 300ms cubic-bezier(.32,.72,0,1);pointer-events:none}
 .aichat.on{transform:none;pointer-events:auto}
 .aipanel{background:#141416;border:1px solid var(--line);border-radius:24px;padding:0 12px 12px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 /* the handle sits in the panel's top margin; drag it down to close, tap it to fold the answer */
@@ -95,7 +95,7 @@ function render(){
 const fold=m=>{box.classList.toggle('min',m);box.querySelector('.aihandle').setAttribute('aria-label',m?'Show the answer. Drag down to close.':'Fold the answer. Drag down to close.');};
 function open(){paintBub();if(!T.length)T.push(GREET());render();fold(false);box.classList.add('on');bub.classList.add('off');
   if(matchMedia('(pointer:fine)').matches)setTimeout(()=>input.focus(),300);}
-function close(){box.classList.remove('on');input.blur();syncBub();setTimeout(()=>{if(!box.classList.contains('on'))fold(false);},320);}
+function close(){box.classList.remove('on');box.style.transform='';box.style.transition='';input.blur();syncBub();setTimeout(()=>{if(!box.classList.contains('on'))fold(false);},320);}
 bub.onclick=open;
 /* the chevron folds the answer away and leaves the input; the handle toggles it back */
 box.querySelector('.aimin').onclick=()=>fold(true);
@@ -105,13 +105,18 @@ box.querySelector('.aihandle').onclick=e=>{if(e.detail===0)toggleFold();};
 input.oninput=()=>sendB.classList.toggle('ready',!!input.value.trim());
 form.onsubmit=e=>{e.preventDefault();const t=input.value.trim();if(!t||busy)return;input.value='';sendB.classList.remove('ready');send(t);};
 /* drag the handle: down closes the whole chat (a quick flick is enough), up unfolds the answer */
-{const top=box.querySelector('.aitop');let y0=null,t0=0,dy=0;
-  top.addEventListener('pointerdown',e=>{if(y0!=null)return;y0=e.clientY;t0=performance.now();dy=0;dragged=false;box.style.transition='none';top.setPointerCapture(e.pointerId);});
-  top.addEventListener('pointermove',e=>{if(y0==null)return;dy=e.clientY-y0;if(Math.abs(dy)>4)dragged=true;
-    box.style.transform=`translateY(${dy>0?dy:-Math.sqrt(-dy)*2}px)`;});
-  const end=()=>{if(y0==null)return;const v=dy/Math.max(1,performance.now()-t0);y0=null;box.style.transition='';box.style.transform='';
+{const top=box.querySelector('.aitop');let y0=null,t0=0,dy=0,pid=null;
+  /* move and up are followed on the window: the handle row is short and iOS does not always keep pointer capture,
+     so a drag that leaves the row must still finish (and never leave the drawer stuck half-way with the bubble hidden) */
+  top.addEventListener('pointerdown',e=>{if(y0!=null)return;y0=e.clientY;t0=performance.now();dy=0;dragged=false;pid=e.pointerId;box.style.transition='none';
+    try{top.setPointerCapture(e.pointerId);}catch(err){}});
+  window.addEventListener('pointermove',e=>{if(y0==null||e.pointerId!==pid)return;dy=e.clientY-y0;if(Math.abs(dy)>4)dragged=true;
+    box.style.transform=`translateY(${dy>0?dy:-Math.sqrt(-dy)*2}px)`;},{passive:true});
+  const end=e=>{if(y0==null||(e&&e.pointerId!==pid))return;const v=dy/Math.max(1,performance.now()-t0);y0=null;pid=null;box.style.transition='';box.style.transform='';
     if(!dragged){toggleFold();return;}if(dy>90||v>.5)close();else if(dy<-24)fold(false);};
-  top.addEventListener('pointerup',end);top.addEventListener('pointercancel',end);}
+  window.addEventListener('pointerup',end);window.addEventListener('pointercancel',end);
+  /* touch fallback: some iOS builds cancel pointer events mid-gesture; touchend still arrives */
+  window.addEventListener('touchend',()=>{if(y0!=null)end();});}
 
 /* ---------- what the assistant may do ---------- */
 const ACTIONS=['none','start_next_session','start_session','open_program','set_current_program','build_session','open_view','open_exercise','log_set'];
@@ -185,7 +190,11 @@ async function send(text){T.push({role:'user',text});busy=true;fold(false);rende
 window.blockChat={open,send};
 
 /* the bubble steps aside during a workout and while the drawer is open */
-function syncBub(){const v=visibleView(),hide=v==='log'||v==='play'||box.classList.contains('on');bub.classList.toggle('off',hide);}
+/* a page with a sticky action bar (the generator) keeps it in view: bubble and chat sit just above it */
+function lift(){const bar=[...document.querySelectorAll('.gbar')].find(b=>b.offsetParent!==null);
+  document.documentElement.style.setProperty('--gbar',bar?`${Math.max(0,bar.offsetHeight-Math.round(parseFloat(getComputedStyle(bar).paddingBottom))+2)}px`:'0px');}
+window.blockChatLift=lift;
+function syncBub(){lift();const v=visibleView(),hide=v==='log'||v==='play'||box.classList.contains('on');bub.classList.toggle('off',hide);}
 const _show=show;show=function(v){_show(v);if(box.classList.contains('on')&&(v==='log'||v==='play'))close();setTimeout(syncBub,0);paintBub();};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&box.classList.contains('on'))close();});
 syncBub();

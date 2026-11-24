@@ -168,7 +168,7 @@ function level(key){
       <div class="lvlab">${LV.map(l=>`<span>${l}</span>`).join('')}</div>`;}
   return `<div class="exsec"><h3>Strength level</h3><div class="exlvl">${body}
     <div class="lvin"><input type="number" inputmode="decimal" id="exBw" value="${bw||''}" placeholder="kg" aria-label="Bodyweight in kg"><span>kg bodyweight</span>
-      <div class="seg"><button data-sex="m" class="${sex==='m'?'on':''}" aria-label="Male standards">♂</button><button data-sex="f" class="${sex==='f'?'on':''}" aria-label="Female standards">♀</button></div></div>
+      <div class="seg"><button data-sex="m" class="${sex==='m'?'on':''}" aria-label="Male standards">Men</button><button data-sex="f" class="${sex==='f'?'on':''}" aria-label="Female standards">Women</button></div></div>
     <p class="exnote">A rough guide from common bodyweight standards.</p></div></div>`;
 }
 function records(ex){

@@ -15,6 +15,17 @@ const css=`
 .aibox textarea{min-height:64px;resize:vertical}
 .aibtn{margin-top:10px;padding:10px 14px;border-radius:999px;background:var(--accent);color:#000;font:inherit;font-size:14px;font-weight:700;border:0;cursor:pointer}
 .aibtn.ghost{background:none;color:#fff;border:1px solid var(--line)}
+/* weekly review: folds away, and can be written again later in the week */
+.aiwrev{margin:12px 0 0;border-top:1px solid var(--line)}
+.aiwhd{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:10px 0 4px;background:none;border:0;color:#fff;font:inherit;text-align:left;cursor:pointer}
+.aiwhd b{display:block;font-size:15px;font-weight:600}
+.aiwhd small{display:block;color:var(--dim);font-size:12px;font-weight:500;margin-top:1px}
+.aiwhd .ic{flex:none;color:var(--dim);transition:transform 200ms cubic-bezier(.23,1,.32,1)}
+.aiwrev.on .aiwhd .ic{transform:rotate(180deg)}
+.aiwbody{display:grid;grid-template-rows:0fr;transition:grid-template-rows 240ms cubic-bezier(.23,1,.32,1)}
+.aiwbody>div{min-height:0;overflow:hidden}
+.aiwrev.on .aiwbody{grid-template-rows:1fr}
+@media (prefers-reduced-motion:reduce){.aiwbody,.aiwhd .ic{transition:none}}
 .aibtn[disabled]{opacity:.5}
 .aiout{margin-top:10px}
 .aipick{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;margin-top:8px;padding:12px 14px;border-radius:12px;background:var(--bg,#000);border:1px solid var(--line);color:#fff;font:inherit;text-align:left;cursor:pointer}
@@ -164,24 +175,31 @@ function renderWeek(){const home=document.getElementById('v-home');if(!home)retu
   let box=document.getElementById('aiWeek');
   if(!box){box=document.createElement('div');box.id='aiWeek';box.className='aibox aiweek';
     const anchor=document.getElementById('homeHealth')||document.getElementById('progList');if(!anchor)return;anchor.before(box);}
-  const w=weekStats(),wk=weekKey(),saved=(S.reviews||{})[wk];
+  const w=weekStats(),wk=weekKey(),saved=(S.reviews||{})[wk],stale=!!saved&&saved.sess!=null&&w.sess>saved.sess;
   const top=Object.entries(w.pat).filter(([p])=>p!=='Other').sort((a,b)=>b[1]-a[1]).slice(0,3).map(([p,n])=>`${p.toLowerCase()} ${n}`).join(', ');
   box.innerHTML=`<h4>Your week · last 7 days</h4><div class="grid"><div><b>${w.sess}</b><span>Sessions</span></div><div><b>${w.sets}</b><span>Work sets</span></div><div><b>${w.vol.toLocaleString('en-GB')}</b><span>kg moved</span></div></div>
     ${w.sets?`<p class="dim">Most sets: ${esc2(top||'—')}.${w.missing.length?` Nothing for ${esc2(w.missing.map(x=>x.toLowerCase()).join(', '))}.`:' Every main pattern got work.'}</p>`:'<p class="dim">No sets logged in the last 7 days yet.</p>'}
-    ${saved?reviewHTML(saved):''}
-    <button class="aibtn${saved?' ghost':''}" id="aiWeekGo">${saved?'Write it again':ready()?'Write my weekly review':'Review my week'}</button><div class="aiout" id="aiWeekOut"></div>`;
+    ${saved?`<div class="aiwrev${revOpen(wk)?' on':''}"><button class="aiwhd" type="button" aria-expanded="${revOpen(wk)}"><span><b>${esc2(saved.headline||'Your review')}</b><small>Written after ${saved.sess!=null?`${saved.sess} session${saved.sess===1?'':'s'}`:'earlier this week'}${stale?` · ${w.sess-saved.sess} more since`:''}</small></span>${ICON.down}</button>
+      <div class="aiwbody"><div>${reviewHTML({...saved,headline:''}).replace('<p><b></b></p>','')}</div></div></div>`:''}
+    <button class="aibtn${saved&&!stale?' ghost':''}" id="aiWeekGo">${saved?(stale?'Update my review':'Review my week again'):ready()?'Write my weekly review':'Review my week'}</button><div class="aiout" id="aiWeekOut"></div>`;
+  const rv=box.querySelector('.aiwrev');
+  if(rv)rv.querySelector('.aiwhd').onclick=()=>{const on=!rv.classList.contains('on');rv.classList.toggle('on',on);rv.querySelector('.aiwhd').setAttribute('aria-expanded',on);revOpen(wk,on);};
   box.querySelector('#aiWeekGo').onclick=async e=>{const out=box.querySelector('#aiWeekOut'),btn=e.currentTarget;
-    if(!ready()){const r={headline:w.sets?`${w.sess} sessions, ${w.sets} work sets`:'A quiet week',
+    if(!ready()){const r={headline:w.sets?`${w.sess} session${w.sess===1?'':'s'}, ${w.sets} work set${w.sets===1?'':'s'}`:'A quiet week',
         review:w.missing.length?`You trained ${top||'little'} most. Patterns with no work: ${w.missing.join(', ').toLowerCase()}.`:'Every main movement pattern got some work. Good balance.',
         actions:w.missing.slice(0,3).map(p=>`Add 2–3 sets of a ${p.toLowerCase()} exercise next week`)};
       if(!r.actions.length)r.actions=['Keep the same rhythm next week'];
-      (S.reviews=S.reviews||{})[wk]=r;save();renderWeek();return;}
+      r.sess=w.sess;(S.reviews=S.reviews||{})[wk]=r;revOpen(wk,true);save();renderWeek();return;}
     busy(btn,true,'Writing…');
     try{const r=await ask({system:SYS,effort:'medium',
         prompt:`Write my weekly training review. Be specific: what went well, what is out of balance, what to change next week. 3 actions, each one line.\n\nStats: ${JSON.stringify(w)}\nCurrent program: ${S.active?(progById(S.active)||{}).n:'none'}\n\nSessions in the last 7 days:\n${recentText(7)||'none'}\n\nThe 7 days before, for comparison:\n${recentText(14).split('\n\n').filter(b=>b.slice(0,10)<day(Date.now()-7*864e5)).join('\n\n')||'none'}`,
         schema:obj({headline:str,review:str,actions:arr(str)})});
-      (S.reviews=S.reviews||{})[wk]=r;save();renderWeek();}
+      r.sess=w.sess;(S.reviews=S.reviews||{})[wk]=r;revOpen(wk,true);save();renderWeek();}
     catch(err){out.innerHTML=errHTML(err);busy(btn,false,'Try again');}};}
+/* folded or open, per week, on this device only */
+function revOpen(wk,v){let m={};try{m=JSON.parse(localStorage.getItem('block.weekrev')||'{}');}catch(e){}
+  if(v===undefined)return m[wk]!==false;
+  m={[wk]:!!v};try{localStorage.setItem('block.weekrev',JSON.stringify(m));}catch(e){}return v;}
 const _rh=renderHome;renderHome=function(){_rh();try{renderWeek();}catch(e){}};
 
 /* ---------- 5. ask about a program ---------- */
