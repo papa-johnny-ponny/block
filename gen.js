@@ -128,7 +128,7 @@ const st=document.createElement('style');st.textContent=css;document.head.append
 /* ---------- answers ---------- */
 const TIME=[15,20,30,45,60,75].map(t=>[t,`${t} min`]);
 const FOCUS=[['full','Full body'],['upper','Upper'],['lower','Lower'],['push','Push'],['pull','Pull'],
-  ['fpush','Push + legs','squat, lunge, press'],['fpull','Pull + hinge','deadlift, row, pull-up'],['core','Core'],['cond','Conditioning']];
+  ['fpush','Push + legs','squat, lunge, press'],['fpull','Pull + hinge','deadlift, row, pull-up'],['core','Core'],['cond','Conditioning'],['run','Run','easy, tempo or intervals'],['sprint','Sprints','drills, strides, sprints']];
 const EQ=[['bw','Bodyweight'],['db','Dumbbells'],['kb','Kettlebell'],['bb','Barbell'],['rack','Squat rack + bench'],['bar','Pull-up / dip bar'],['rings','Rings'],
   ['band','Bands'],['mach','Cables & machines'],['cardio','Bike, rower or ski'],['sb','Sandbag'],['mace','Mace']];
 const EQ_PRE=[['Home',['bw','db','kb','bar','band']],['Gym',['bw','db','kb','bb','rack','bar','rings','band','mach','cardio']],['Kettlebell only',['kb']],['Bodyweight only',['bw']]];
@@ -146,8 +146,12 @@ const APPR=()=>[...BASE_APPR,...(window.BLOCK_APPROACHES||[])];
 const apprOf=o=>o&&o.appr?APPR().find(a=>a.id===o.appr)||null:null;
 function gpOf(o){const g=GP[o.goal],A=apprOf(o);if(!A||!A.gp)return g;
   const x={...g,...A.gp};['s','r'].forEach(k=>{if(!Array.isArray(x[k])||x[k].length<2)x[k]=g[k];});return x;}
-const EXTRA=[['warm','Warm-up'],['fin','Core finisher'],['fresh','Skip what I trained the last 2 days']];
-const DEF={time:30,focus:'full',eq:['bw','db','kb','bar','band'],goal:'muscle',eff:'mod',fmt:'super',avoid:[],warm:true,fin:true,fresh:true,from:[],appr:''};
+const EXTRA=[['fin','Core finisher'],['fresh','Skip what I trained the last 2 days']];
+/* warm-up: general, or one of the ready-made blocks in warm.js */
+const WARM=[['general','General'],['rope','Jump rope'],['flow','Rope flow'],['animal','Animal moves'],['none','None']];
+const WON=o=>(o.wtype||'general')!=='none';
+const RUNF=o=>o.focus==='run'||o.focus==='sprint';
+const DEF={time:30,focus:'full',eq:['bw','db','kb','bar','band'],goal:'muscle',eff:'mod',fmt:'super',avoid:[],wtype:'general',fin:true,fresh:true,from:[],appr:''};
 const PDEF={days:3,weeks:8,split:'auto',prog:'double',auto:'on',deload:4,name:''};
 const SPLIT=[['auto','Pick for me'],['full','Full body'],['ul','Upper / lower'],['fpp','Push / pull','Flolyfe, legs included'],['ppl','Push / pull / legs']];
 const PROG=[['double','Double progression','top of the range, then add load'],['setsreps','Sets, then reps','SBS: 3×8 up to 5×12, then add load'],
@@ -272,7 +276,7 @@ function candidates(roles,o,ctx,skip){return POOL.filter(m=>roles.some(r=>m.role
 function choose(roles,o,ctx,skip){const c=candidates(roles,o,ctx,skip);if(!c.length)return null;
   let best=null,bw=-1;c.forEach(m=>{const w=weight(m,o,roles,ctx);if(w>bw){bw=w;best=m;}});return best;}
 function tplOf(o,focus){let t=TPL[focus||o.focus]||TPL.full;if(o.goal==='power'&&!['core','cond'].includes(focus||o.focus))t=[['plyo','power'],...t];return t;}
-function budget(o){const short=o.time<=20;return o.time*60-(o.warm?(short?180:300):0)-(o.fin?(short?120:270):0);}
+function budget(o){const short=o.time<=20;return o.time*60-(WON(o)?(short?180:300):0)-(o.fin?(short?120:270):0);}
 function mainSets(o,m,i){const g=gpOf(o);let s=i<2&&m.compound?g.s[1]:g.s[0];
   if(o.eff==='easy')s=Math.max(2,s-1);if(o.time<=20)s=Math.max(2,Math.min(s,3));return s;}
 function workSec(o,m){const g=gpOf(o);return m.hold||m.region==='cond'||m.region==='carry'?35:Math.max(20,(g.r[0]+g.r[1])/2*g.sec);}
@@ -287,7 +291,7 @@ function fastCount(o,focus){const b=budget(o)/60;
   if(o.fmt==='amrap')return b<12?3:b<20?4:5;
   return b<13?3:4;}
 /* the main picks, sized to the time, plus core finisher picks */
-function buildPicks(o,seed,soft,focus){if(!POOL)buildPool();
+function buildPicks(o,seed,soft,focus){if(!POOL)buildPool();if(RUNF({focus:focus||o.focus}))return[];
   const ctx={chosen:[],rng:rngOf(seed),soft,focus},all=[];
   for(const roles of tplOf(o,focus)){const m=choose(roles,o,ctx);if(m){ctx.chosen.push(m);all.push({roles,k:m.k});}}
   let n;
@@ -337,10 +341,37 @@ function pairUp(list){const left=[...list],out=[];
 function interleave(list){const lo=list.filter(x=>x.m.region==='lower'),up=list.filter(x=>x.m.region==='upper'),
   rest=list.filter(x=>x.m.region!=='lower'&&x.m.region!=='upper'),pw=rest.filter(x=>x.m.region==='cond'),tail=rest.filter(x=>x.m.region!=='cond'),out=[...pw];
   while(lo.length||up.length){if(lo.length)out.push(lo.shift());if(up.length)out.push(up.shift());}return[...out,...tail];}
+/* warm-up rows: a ready-made block from warm.js, or the general one */
+const UNIT={min:' min',s:' s',m:' m'};
+function bundle(B){return B.items.filter(x=>EX[x[0]]).map(([id,sets,r,nt])=>({id,s:`${sets} × ${r}${UNIT[(EX[id]||{}).u]||''}`,nt:nt||''}));}
+function warmItems(o,short,forRun){const w=o.wtype||'general',B=(window.BLOCK_WARM||{})[w];
+  if(B)return[{grp:`Warm-up · ${B.n.toLowerCase()}`},...bundle(B)];
+  if(forRun)return[{grp:'Warm-up'},{id:'easy_run',s:'1 × 5 min',nt:'very easy jog'}];
+  return[{grp:'Warm-up'},{n:'Warm-up',s:`${short?3:5} min`,nt:'easy cardio and joint circles, then two light sets of the first exercise'}];}
+/* a run or a sprint session sized to the time; opt (in a program) adds a little each week and backs off on deloads */
+function runPlan(o,opt){const T=o.time,k=opt?opt.k%4:0,dl=opt&&opt.deload,out=[],eff={easy:-1,mod:0,hard:1}[o.eff]||0;
+  const W=WON(o)?warmItems(o,T<=20,true):[],wmin=WON(o)?5:0;out.push(...W);
+  if(o.focus==='run'){const kind={power:'short',strength:'int',muscle:'tempo',endur:'easy'}[o.goal]||'easy';
+    let main=Math.max(8,T-wmin-(kind==='easy'?0:4));
+    if(kind==='easy'){main=Math.round((main+(opt?2*k:0))*(dl?.7:1));out.push({grp:'Run'},{id:'easy_run',s:`1 × ${main} min`,nt:'conversational pace · you can talk in full sentences'});}
+    else if(kind==='tempo'){const t=Math.max(6,Math.round(main*.6)+(opt?k:0));out.push({grp:'Run'},{id:'easy_run',s:`1 × ${Math.max(3,main-t)} min`,nt:'easy, building up'},
+      {id:'tempo_run',s:`1 × ${dl?Math.round(t*.6):t} min`,nt:'comfortably hard · about RPE 7'});}
+    else{const len=kind==='short'?200:400,per=kind==='short'?2.5:4,n=Math.max(3,Math.min(12,Math.round(main/per)+eff+(opt?k:0)-(dl?2:0)));
+      out.push({grp:`Intervals · ${kind==='short'?'60–90 s':'90 s'} easy between`},{id:'run_int',s:`${n} × ${len} m`,nt:kind==='short'?'fast and relaxed · walk back':'hard but even pace · the last one as fast as the first'});}
+    if(kind!=='easy')out.push({grp:'Cool-down'},{id:'easy_run',s:'1 × 4 min',nt:'very easy'});
+    return out;}
+  if(!WON(o)||(o.wtype||'general')==='general'){if(W.length)out.length=0;out.push({grp:'Warm-up'},{id:'dyn_warmup',s:'1 × 8 min',nt:'follow along'});}
+  const n=Math.max(4,Math.min(10,Math.round((T-14)/2.5)+eff+(opt?Math.min(2,k):0)-(dl?2:0))),acc=o.goal==='power'||o.goal==='strength';
+  out.push({grp:'Drills'},{id:'a_skip',s:'2 × 20 m',nt:''},{id:'b_skip',s:'2 × 20 m',nt:''},{id:'strides',s:'3 × 80 m',nt:'build to 80–90 %, walk back'},
+    {grp:'Sprints · full recovery'},acc?{id:'accel_sprint',s:`${n} × 20 m`,nt:'all-out from a standing start · walk back and rest 90 s'}
+      :{id:'flying_sprint',s:`${n} × 30 m`,nt:'20 m build-up, then 30 m fast · rest 2 min'},
+    {grp:'Cool-down'},{id:'backward_walk',s:'1 × 3 min',nt:'easy'});
+  return out;}
 /* turn picks into session items; each item remembers its pick (_p) for swaps */
 function assemble(picks,o,opt){const g=gpOf(o),out=[],short=o.time<=20;
   const main=picks.map((p,i)=>({p,i,m:META[p.k]})).filter(x=>x.m&&!x.p.fin),fin=picks.map((p,i)=>({p,i,m:META[p.k]})).filter(x=>x.m&&x.p.fin);
-  if(o.warm)out.push({grp:'Warm-up'},{n:'Warm-up',s:`${short?3:5} min`,nt:'easy cardio and joint circles, then two light sets of the first exercise'});
+  if(RUNF(o))return runPlan(o,opt);
+  if(WON(o))out.push(...warmItems(o,short));
   const row=(x,j,s,nt)=>({id:x.p.k,s,nt,_p:x.i});
   if(o.fmt==='straight'){out.push({grp:`Main · rest ${restTxt(g.rest)} between sets`});
     main.forEach((x,j)=>{const r=rx(x.m,o,j,opt);out.push(row(x,j,r.s,r.nt));});}
@@ -368,7 +399,8 @@ function assemble(picks,o,opt){const g=gpOf(o),out=[],short=o.time<=20;
     fin.forEach(x=>out.push({id:x.p.k,s:short?'20 s':'30 s',nt:'',_p:x.i}));}
   return out;}
 function estMin(picks,o){const ms=picks.filter(p=>!p.fin).map(p=>META[p.k]).filter(Boolean),short=o.time<=20;
-  let t=(o.warm?(short?180:300):0)+(picks.some(p=>p.fin)?(short?120:270):0);
+  if(RUNF(o))return o.time;
+  let t=(WON(o)?(short?180:300):0)+(picks.some(p=>p.fin)?(short?120:270):0);
   if(FAST(o))t+=budget(o);else t+=est(ms,o);return Math.max(5,Math.round(t/60));}
 
 /* ---------- state ---------- */
@@ -380,6 +412,7 @@ const body=view.querySelector('#genBody');
 const _show=show;show=function(v){_show(v);view.classList.toggle('hide',v!=='gen');};
 function prefs(){const o=Object.assign({},DEF,S.genPrefs||{});o.eq=[...(o.eq||[])];
   /* answers saved before bodyweight and rack became choices: keep what they meant */
+  if(!o.wtype)o.wtype=o.warm===false?'none':'general';delete o.warm;
   if(!o.eqv){if(!o.eq.includes('bw'))o.eq.unshift('bw');if(o.eq.includes('bb')&&!o.eq.includes('rack'))o.eq.push('rack');o.eqv=2;}
   return o;}
 function genOpen(){buildPool();G={step:1,o:prefs(),p:Object.assign({},PDEF),seed:Date.now()%1e6,swaps:0,key:null,title:''};show('gen');render();}
@@ -431,7 +464,7 @@ function questions(o,withFocus){
   const ap=APPR().slice().sort((a,b)=>(a.by||'').localeCompare(b.by||'')),cur=apprOf(o);
   return(withFocus?sec('Today',q('Time',chips('time',TIME,o.time))+q('Focus',chips('focus',FOCUS,o.focus))):sec('Session',q('Time per session',chips('time',TIME,o.time))))
    +sec('Equipment',`<div class="gpre">${EQ_PRE.map(([l],i)=>`<button data-pre="${i}">${l}</button>`).join('')}</div>${chips('eq',EQ,o.eq,true)}<p class="gmsg" style="margin-top:8px">Turn off Bodyweight to leave out moves without equipment.</p>`)
-   +sec('Training',q('Goal',chips('goal',GOAL,o.goal))+slider('eff','Intensity',o.eff)+q('Format',chips('fmt',FMT,o.fmt)))
+   +sec('Training',q('Goal',chips('goal',GOAL,o.goal))+slider('eff','Intensity',o.eff)+q('Format',chips('fmt',FMT,o.fmt))+q('Warm-up',chips('wtype',WARM,o.wtype||'general')))
    +`<details class="gmore"${o.avoid.length||o.from.length||o.appr?' open':''}><summary><span>More options<small>Approach, things to go easy on, creators</small></span></summary>`
    +`<section class="gsec">`+picker('appr','Approach',[['','None','plain rules'],...ap.map(a=>[a.id,a.n,a.short||'',a.by])],o.appr||'',false,'None')
    +`<p class="gmsg" id="gApprTxt">${cur?esc(cur.details||cur.short||''):'Pick a coach’s way of training to shape sets, reps, rest and format. Only this session uses it.'}</p>`
@@ -489,6 +522,8 @@ const autoTitle=o=>`${lab(FOCUS,o.focus)} · ${lab(GOAL,o.goal).toLowerCase()}`;
 const ROLE={squat:'squat',lunge:'lunge',hinge:'hinge',hpush:'horizontal push',vpush:'vertical push',hpull:'horizontal pull',vpull:'vertical pull',
   curl:'biceps',tri:'triceps',delt:'shoulders',calf:'calves',legacc:'quads',hamacc:'hamstrings',core:'core',rot:'rotation',carry:'carry',cond:'conditioning',plyo:'jumps',power:'power'};
 function why(){const o=G.o,main=G.picks.filter(p=>!p.fin),parts=[];
+  if(RUNF(o))return esc(o.focus==='run'?({power:'Short hard repeats with full recovery.',strength:'Hard repeats with walk or jog breaks.',muscle:'A tempo block: comfortably hard, framed by easy running.',endur:'Easy running you could hold a conversation in.'}[o.goal])
+    :'Drills and strides first, then short sprints with full recovery so every rep stays fast.');
   const names=main.map(p=>{const m=META[p.k];const r=p.roles.find(x=>m&&m.roles.has(x))||p.roles[0];return ROLE[r];});
   const uniq=names.filter((x,i)=>names.indexOf(x)===i);
   parts.push(`${uniq.length>1?uniq.slice(0,-1).join(', ')+' and '+uniq[uniq.length-1]:uniq[0]||'—'}${G.picks.some(p=>p.fin)?', then a core finisher':''}.`.replace(/^./,c=>c.toUpperCase()));
@@ -514,16 +549,17 @@ function pickerHTML(i){const o=G.o,p=G.picks[i],others=G.picks.filter((x,j)=>j!=
     <button class="btn-s gwide" data-auto="1" style="margin-top:8px">Pick one for me</button></div>`;}
 function renderSuggest(){const o=G.o,items=assemble(G.picks,o);
   let h=`<input id="gTitle" class="gtitle" value="${esc(G.title)}" aria-label="Session name">
-    <p class="sub">~${estMin(G.picks,o)} min · ${lab(FMT,o.fmt).toLowerCase()} · ${lab(GOAL,o.goal).toLowerCase()} · ${lab(EFF,o.eff).toLowerCase()}</p>
+    <p class="sub">~${estMin(G.picks,o)} min · ${RUNF(o)?`${lab(FOCUS,o.focus).toLowerCase()} · ${o.focus==='run'?{power:'short repeats',strength:'intervals',muscle:'tempo',endur:'easy'}[o.goal]:'drills and sprints'}`:`${lab(FMT,o.fmt).toLowerCase()} · ${lab(GOAL,o.goal).toLowerCase()}`} · ${lab(EFF,o.eff).toLowerCase()}</p>
     <p class="gwhy">${why()}</p>`;
   items.forEach(it=>{if(it.grp){h+=`<h4 class="ggrp">${esc(it.grp)}</h4>`;return;}
     if(!it.id){h+=`<div class="gplain"><b>${esc(it.n)}</b> · ${esc(it.s)}${it.nt?` · ${esc(it.nt)}`:''}</div>`;return;}
     const ex=exOf({id:it.id}),th=window.blockThumb?blockThumb(ex,44):'';
+    if(it._p==null){h+=`<div class="grow"><button class="gex" data-x="${it.id}">${th}<span><b>${esc(ex.n)}</b><small>${esc(it.s)}${it.nt?` · ${esc(it.nt)}`:''}</small></span></button></div>`;return;}
     h+=`<div class="grow"><button class="gex" data-x="${it.id}">${th}<span><b>${esc(ex.n)}</b><small>${esc(it.s)}${it.nt?` · ${esc(it.nt)}`:''}</small></span></button>
       <button class="gsw${G.pickOpen===it._p?' on':''}" data-sw="${it._p}" aria-label="Swap ${esc(ex.n)}" aria-expanded="${G.pickOpen===it._p}">${SWAP_SVG}</button><button class="gdel" data-rm="${it._p}" aria-label="Remove ${esc(ex.n)}">${X_SVG}</button></div>`;
     if(G.pickOpen===it._p)h+=pickerHTML(it._p);});
   h+=`<p class="gmsg" id="gMsg" role="status"></p>
-    ${FAST(o)?'':'<button class="btn-s gwide" id="gAdd">+ Add an exercise</button>'}
+    ${FAST(o)||RUNF(o)?'':'<button class="btn-s gwide" id="gAdd">+ Add an exercise</button>'}
     <section class="gsec"><h3>Keep it</h3><div class="gkeep"><button class="btn-s" id="gSave">${G.key?'Save changes':'Save to own sessions'}</button><button class="btn-s" id="gProg">Make it a program</button></div>
     <div class="glinks"><button class="plink" id="gAsk">Change answers</button><button class="plink" id="gSelf">Build it myself</button></div></section>
     <div class="gbar"><button class="gout" id="gShuf">Shuffle</button><button class="pgo" id="gStart">Start session</button></div>`;
@@ -569,14 +605,15 @@ function saveDay(){const o=G.o,items=clean(assemble(G.picks,o)),title=(G.title||
 
 /* ---------- step 3: make it a program ---------- */
 function splitOf(p,focus){let s=p.split;const d=p.days;
+  if(focus==='run'||focus==='sprint')return{s:focus,seq:Array.from({length:d},()=>focus),usesToday:true};
   if(s==='auto'){if(focus==='fpush'||focus==='fpull')s='fpp';else if(d<=3)s=(focus==='push'||focus==='pull')&&d===3?'ppl':'full';
     else if(d===4)s='ul';else if(d===5)s='ulppl';else s='ppl';}
   const cyc={full:['full'],ul:['upper','lower'],fpp:['fpush','fpull'],ppl:['push','pull','lower'],ulppl:['upper','lower','push','pull','lower']}[s];
   let seq=Array.from({length:d},(_,i)=>cyc[i%cyc.length]);
   const at=seq.indexOf(focus);if(at>0)seq=[...seq.slice(at),...seq.slice(0,at)];
   return{s,seq,usesToday:seq[0]===focus};}
-const SPLIT_LAB={full:'Full body',ul:'Upper/lower',fpp:'Push/pull',ppl:'PPL',ulppl:'Upper/lower + PPL'};
-const DAY_LAB={full:'Full body',upper:'Upper',lower:'Lower',push:'Push',pull:'Pull',fpush:'Push + legs',fpull:'Pull + hinge',core:'Core',cond:'Conditioning'};
+const SPLIT_LAB={run:'Running',sprint:'Sprints',full:'Full body',ul:'Upper/lower',fpp:'Push/pull',ppl:'PPL',ulppl:'Upper/lower + PPL'};
+const DAY_LAB={full:'Full body',upper:'Upper',lower:'Lower',push:'Push',pull:'Pull',fpush:'Push + legs',fpull:'Pull + hinge',core:'Core',cond:'Conditioning',run:'Run',sprint:'Sprints'};
 function deloadWeeks(p){return p.deload?Array.from({length:p.weeks},(_,i)=>i+1).filter(w=>w%p.deload===0):[];}
 function summary(){const p=G.p,sp=splitOf(p,G.o.focus),dl=deloadWeeks(p);
   return`<b>${p.days} days a week · ${p.weeks} weeks · ${p.days*p.weeks} sessions</b><br>${SPLIT_LAB[sp.s]}: ${sp.seq.map(f=>DAY_LAB[f]).join(', ')}.<br>`
