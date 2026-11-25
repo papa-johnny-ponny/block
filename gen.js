@@ -131,8 +131,8 @@ const TIME=[15,20,30,45,60,75].map(t=>[t,`${t} min`]);
 const FOCUS=[['full','Full body'],['upper','Upper'],['lower','Lower'],['push','Push'],['pull','Pull'],
   ['fpush','Push + legs','squat, lunge, press'],['fpull','Pull + hinge','deadlift, row, pull-up'],['core','Core'],['cond','Conditioning'],['run','Run','easy, tempo or intervals'],['sprint','Sprints','drills, strides, sprints']];
 const EQ=[['bw','Bodyweight'],['db','Dumbbells'],['kb','Kettlebell'],['bb','Barbell'],['rack','Squat rack + bench'],['bar','Pull-up / dip bar'],['rings','Rings'],
-  ['band','Bands'],['mach','Cables & machines'],['cardio','Bike, rower or ski'],['sb','Sandbag'],['mace','Mace']];
-const EQ_PRE=[['Home',['bw','db','kb','bar','band']],['Gym',['bw','db','kb','bb','rack','bar','rings','band','mach','cardio']],['Kettlebell only',['kb']],['Bodyweight only',['bw']]];
+  ['band','Bands'],['rope','Jump rope'],['mach','Cables & machines'],['cardio','Bike, rower or ski'],['sb','Sandbag'],['mace','Mace']];
+const EQ_PRE=[['Home',['bw','db','kb','bar','band','rope']],['Gym',['bw','db','kb','bb','rack','bar','rings','band','rope','mach','cardio']],['Kettlebell only',['kb']],['Bodyweight only',['bw']]];
 const GOAL=[['power','Power','explosive · 3–5 reps'],['strength','Strength','heavy · 4–6 reps'],['muscle','Muscle','8–12 reps'],['endur','Endurance','15–20 reps']];
 const EFF=[['easy','Easy','RPE 6'],['mod','Moderate','RPE 7–8'],['hard','Hard','last set to failure']];
 const FMT=[['straight','Straight sets','one exercise at a time'],['super','Supersets','pairs that don’t compete'],
@@ -152,7 +152,7 @@ const EXTRA=[['fin','Core finisher'],['fresh','Skip what I trained the last 2 da
 const WARM=[['general','General'],['rope','Jump rope'],['flow','Rope flow'],['animal','Animal moves'],['none','None']];
 const WON=o=>(o.wtype||'general')!=='none';
 const RUNF=o=>o.focus==='run'||o.focus==='sprint';
-const DEF={time:30,focus:'full',eq:['bw','db','kb','bar','band'],goal:'muscle',eff:'mod',fmt:'super',avoid:[],wtype:'general',fin:true,fresh:true,from:[],appr:''};
+const DEF={time:30,focus:'full',eq:['bw','db','kb','bar','band','rope'],goal:'muscle',eff:'mod',fmt:'super',avoid:[],wtype:'general',fin:true,fresh:true,from:[],appr:''};
 const PDEF={days:3,weeks:8,split:'auto',prog:'double',auto:'on',deload:4,name:''};
 const SPLIT=[['auto','Pick for me'],['full','Full body'],['ul','Upper / lower'],['fpp','Push / pull','Flolyfe, legs included'],['ppl','Push / pull / legs']];
 const PROG=[['double','Double progression','top of the range, then add load'],['setsreps','Sets, then reps','SBS: 3×8 up to 5×12, then add load'],
@@ -181,6 +181,7 @@ const JOINT={knee:/sprint|\brun\b|squat|lunge|jump|pistol|nordic|step|split|boun
 function needs(k,e,n){const r=[];
   if(/\bring/.test(n))r.push('rings');
   else if(/bodyweight row|inverted row|pull-?ups?|pullup|chin|hanging|muscle[\s-]?up|pole vault|\bdips?\b|l[- ]?sit|toes to bar|knees to elbow/.test(n))r.push('bar|rings');
+  if(/jump rope|skipping rope|double unders?\b|rope skip/.test(n)||k.startsWith('jr_'))r.push('rope');
   if(/\bmace\b/.test(n))r.push('mace');
   else if(/sandbag|bear hug/.test(n)||k.startsWith('sb_'))r.push('sb');
   else if(/goblet/.test(n))r.push('kb|db');
@@ -415,6 +416,8 @@ function prefs(){const o=Object.assign({},DEF,S.genPrefs||{});o.eq=[...(o.eq||[]
   /* answers saved before bodyweight and rack became choices: keep what they meant */
   if(!o.wtype)o.wtype=o.warm===false?'none':'general';delete o.warm;
   if(!o.eqv){if(!o.eq.includes('bw'))o.eq.unshift('bw');if(o.eq.includes('bb')&&!o.eq.includes('rack'))o.eq.push('rack');o.eqv=2;}
+  /* jump rope became a choice: answers saved before keep using it */
+  if(o.eqv<3){if(!o.eq.includes('rope'))o.eq.push('rope');o.eqv=3;}
   return o;}
 function genOpen(){buildPool();G={step:1,o:prefs(),p:Object.assign({},PDEF),seed:Date.now()%1e6,swaps:0,key:null,title:''};show('gen');render();}
 function genEdit(day){buildPool();const gd=day.gen||{};
