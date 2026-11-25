@@ -2,7 +2,17 @@
 (function(){
 const css=`
 #v-settings{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 120px)}
-#v-settings .grp{display:block;margin:40px 0 6px;padding-top:28px;border-top:1px solid var(--line);font-size:18px;font-weight:700;color:#fff;letter-spacing:0;text-transform:none}
+#v-settings p.grp.grp,#v-settings .grp.grp{display:block;margin:64px 0 8px;padding-top:36px;border-top:1px solid var(--line);font-size:20px;font-weight:800;color:#fff;letter-spacing:-.005em;text-transform:none}
+#v-settings .grp+.sub{margin-bottom:14px}
+#v-settings #syncBox .grp.grp{margin-top:8px;padding-top:0;border-top:0}
+/* fields read as boxes to fill in: darker, outlined, squarer; buttons stay filled pills */
+#v-settings input:not([type=checkbox]):not([type=radio]):not([type=range]),#v-settings select,#v-settings textarea{background:#0b0b0d;border:1px solid #3a3a3f;border-radius:12px;min-height:50px;
+  color:#fff;transition:border-color 160ms ease}
+#v-settings input::placeholder,#v-settings textarea::placeholder{color:var(--dim-2)}
+#v-settings input:focus,#v-settings select:focus,#v-settings textarea:focus{border-color:#fff;outline:none}
+#v-settings #syPass{margin-top:10px!important}
+#v-settings #syIn{background:#fff;color:#000;font-weight:700;min-height:50px;margin-top:16px!important;transition:transform 140ms ease-out}
+#v-settings #syIn:active{transform:scale(.98)}
 #v-settings #syncBox .grp{margin-top:8px;padding-top:0;border-top:0}
 #v-settings .sub{font-size:14px;line-height:1.5;color:var(--dim)}
 #v-settings .srow{padding:14px 0}

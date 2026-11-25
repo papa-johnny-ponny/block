@@ -14,18 +14,19 @@
 const css=`
 #v-gen .gh{font-size:26px;line-height:1.15;margin:4px 0 6px}
 #v-gen .sub{margin:0}
-.gq{margin:18px 0 0}
+.gq{margin:28px 0 0}
 .gq>h4,.gslh h4{margin:0 0 8px;color:var(--dim);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none}
 .gsec{margin:30px 0 0;padding-top:22px;border-top:1px solid var(--line)}
 .gsec>h3{margin:0;font-size:18px;font-weight:700;color:#fff;letter-spacing:0;text-transform:none}
-.gsec>h3+.gq,.gsec>h3+.gpre{margin-top:14px}
+.gsec>h3+.gq,.gsec>h3+.gpre{margin-top:16px}
 .gchips{display:flex;flex-wrap:wrap;gap:6px}
 .gchip{display:inline-flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;min-height:38px;padding:6px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);color:#fff;font:inherit;font-size:14px;font-weight:600;text-align:left;cursor:pointer;
   transition:transform 140ms ease-out,background-color 140ms ease,border-color 140ms ease}
 .gchip:active{transform:scale(.97)}
 .gchip small{font-size:11px;font-weight:500;color:var(--dim)}
 /* intensity as a three-stop slider */
-.gsl{margin:18px 0 0}
+.gsl{margin:28px 0 0;padding:14px 16px 6px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
+.gsl .gslh h4{margin-bottom:6px}
 .gslh{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 .gslv{font-size:13px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
 .gslv small{color:var(--dim);font-weight:500;font-size:13px}
