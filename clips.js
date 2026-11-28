@@ -18,7 +18,14 @@ const css=`
 .cliphint{color:var(--dim-2);font-size:13px;margin:0 0 6px;line-height:1.45}
 .exvid.ig{aspect-ratio:auto;height:min(620px,calc(100vh - 220px))}
 `;
-const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
+const css2=`
+.clipnote{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--surface-2);color:#e4e4e7;font-size:14px;line-height:1.45}
+.clipsetup{display:block;width:100%;margin:2px 0 14px;padding:10px 0;background:none;border:0;color:var(--accent-text);font:inherit;font-size:14px;font-weight:600;text-align:left}
+.clipsteps{margin:6px 0 14px;padding-left:20px;color:#d6d6d9;line-height:1.5;font-size:15px}.clipsteps li{margin:0 0 8px}
+.clipurl{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:10px 10px 10px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.clipurl code{flex:1;min-width:0;overflow-wrap:anywhere;font-size:13px;color:#fff}
+.clipurl .btn-s{flex:0 0 auto}`;
+const st=document.createElement('style');st.textContent=css+css2;document.head.appendChild(st);
 
 const PLANES=['Sagittal','Frontal','Transverse'];
 const pats=()=>window.BLOCK_PATTERNS||['Squat','Lunge','Hinge','Horizontal push','Vertical push','Horizontal pull','Vertical pull','Carry','Rotation','Arms'];
@@ -31,10 +38,10 @@ function merge(){S.clips=S.clips||{};Object.keys(S.clips).forEach(k=>{EX[k]=S.cl
 merge();
 
 /* ----- add / edit dialog ----- */
-function clipDialog(url,id,after){
+function clipDialog(url,id,after,opt){opt=opt||{};
   merge();const c=id?S.clips[id]:{n:'',c:'bodyweight',pat:'',pl:'Sagittal',v:url||''};
   const d=document.createElement('div');d.className='lgdlg clipdlg';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-labelledby','clipT');
-  d.innerHTML=`<div><h3 id="clipT">${id?'Edit clip':'Save clip'}</h3><p>Name it and say what kind of exercise it is, so it shows up in the right place.</p>
+  d.innerHTML=`<div><h3 id="clipT">${id?'Edit clip':'Save clip'}</h3><p>Name it and say what kind of exercise it is, so it shows up in the right place.</p>${opt.note?`<p class="clipnote">${esc(opt.note)}</p>`:''}
     <label>Link<input id="clipU" inputmode="url" autocomplete="off" placeholder="https://www.instagram.com/reel/…" value="${esc(c.v||'')}"></label>
     <label>Caption or notes <span style="font-weight:400">(optional)</span><textarea id="clipX" rows="2" style="display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:12px 14px;border-radius:12px;background:var(--surface-2);color:#fff;border:1px solid var(--line);font:inherit;font-size:16px" placeholder="Paste the post text, or describe the exercise">${esc(c.cap||'')}</textarea></label>
     <button type="button" class="clipadd" id="clipAI" style="margin-top:10px;background:none;color:#fff;border:1px solid var(--line)">Fill in the rest for me</button>
@@ -43,7 +50,7 @@ function clipDialog(url,id,after){
     <div class="row"><label>Pattern<select id="clipP"><option value="">Not set</option>${pats().map(p=>`<option ${p===c.pat?'selected':''}>${p}</option>`).join('')}</select></label>
     <label>Plane<select id="clipL">${PLANES.map(p=>`<option ${p===c.pl?'selected':''}>${p}</option>`).join('')}</select></label></div>
     <p class="err" id="clipE" role="alert"></p>
-    <button class="go" data-d="save">Save clip</button>${id?'<button data-d="del">Remove clip</button>':''}<button data-d="x">Cancel</button></div>`;
+    <button class="go" data-d="save"${opt.block?' disabled':''}>Save clip</button>${id?'<button data-d="del">Remove clip</button>':''}<button data-d="x">Cancel</button></div>`;
   document.body.append(d);
   let aiSteps=null;
   const q=x=>d.querySelector('#'+x);
@@ -66,7 +73,7 @@ function clipDialog(url,id,after){
     b.disabled=false;b.textContent='Fill in the rest for me';};
   setTimeout(()=>(q('clipU').value?q('clipN'):q('clipU')).focus(),50);
   d.onclick=ev=>{const a=ev.target.dataset&&ev.target.dataset.d;if(!a&&ev.target!==d)return;
-    if(a==='save'){const v=linkIn(q('clipU').value),n=q('clipN').value.trim();
+    if(a==='save'){if(opt.block)return;const v=linkIn(q('clipU').value),n=q('clipN').value.trim();
       if(!v){q('clipE').textContent='Paste the link to the clip.';return;}
       if(!n){q('clipE').textContent='Give the clip a name.';q('clipN').focus();return;}
       const k=id||('ig_'+uid());
@@ -88,6 +95,7 @@ renderLibrary=function(){merge();_lib();
   const box=document.getElementById('libList'),ids=Object.keys(S.clips).sort((a,b)=>S.clips[b].t-S.clips[a].t);
   const w=document.createElement('div');
   w.innerHTML=`<div class="cliphead"><p class="grp">Saved clips</p><button class="clipadd" id="clipAdd">+ Add clip</button></div>
+    <button class="clipsetup" id="clipSetup">Share straight from Instagram · set up</button>
     ${ids.length?'':'<p class="cliphint">In Instagram, tap Share → Copy link, then tap Add clip here. The link is read from your clipboard.</p>'}`;
   ids.forEach(id=>{const c=S.clips[id],b=document.createElement('button');b.className='card';
     b.innerHTML=`<span class="cm"><h3>${esc(c.n)}</h3><p>${[catName(c.c),c.pat,c.pl].filter(Boolean).map(esc).join(' · ')}</p></span><span class="chev">›</span>`;
@@ -96,6 +104,7 @@ renderLibrary=function(){merge();_lib();
   /* category groups below should not list clips a second time */
   box.querySelectorAll(':scope>.card').forEach(b=>{const h=b.querySelector('h3');if(h&&ids.some(id=>S.clips[id].n===h.textContent))b.remove();});
   w.querySelector('#clipAdd').onclick=()=>addFromClipboard(()=>renderLibrary());
+  w.querySelector('#clipSetup').onclick=setupGuide;
 };
 
 /* ----- swap: a "Saved clips" group under the same-category list ----- */
@@ -130,8 +139,30 @@ const exv=document.getElementById('v-ex');if(exv)new MutationObserver(decorate).
 /* sync can replace S at any time: keep EX in step whenever the view changes */
 const _show=show;show=function(v){merge();_show(v);};
 
+/* ----- iPhone: a Shortcut in the share sheet opens BLOCK with ?clip=<link> ----- */
+const BASE=location.origin+location.pathname;
+function setupGuide(){const url=BASE+'?clip=',S2=window.blockSheet;if(!S2)return;
+  S2.open(`<h3>Share from Instagram</h3><p class="sub">iPhone can’t list web apps in the share sheet, so a Shortcut does it. Set it up once (the Swedish names are in brackets and may differ slightly):</p>
+    <ol class="clipsteps">
+      <li>Open <b>Shortcuts</b> (Genvägar), tap <b>+</b> and name the shortcut <b>BLOCK</b>.</li>
+      <li>Tap <b>ⓘ</b> and turn on <b>Show in Share Sheet</b> (Visa i delningsblad). Let it receive <b>URLs</b> and <b>Text</b>.</li>
+      <li>Add <b>Get URLs from Input</b> (Hämta URL:er från indata).</li>
+      <li>Add <b>URL Encode</b> (URL-koda) and encode the URLs from the step above.</li>
+      <li>Add <b>Text</b> and paste the address below, then put the <b>URL Encoded Text</b> (URL-kodad text) right after it.</li>
+      <li>Add <b>Open URLs</b> (Öppna URL:er).</li></ol>
+    <div class="clipurl"><code>${esc(url)}</code><button class="btn-s" id="clipCopy">Copy</button></div>
+    <p class="sub">Then in Instagram: <b>Share → More → BLOCK</b>. The clip opens in Safari, not the app on your Home Screen, so sign in under Settings → Sync in Safari once. Saved clips then reach the app when it syncs.</p>`,
+    sh=>{sh.querySelector('#clipCopy').onclick=async e=>{try{await navigator.clipboard.writeText(url);e.target.textContent='Copied';}catch(x){e.target.textContent='Select and copy';}};});}
+window.blockClipSetup=setupGuide;
+
 /* ----- arriving with a link: ?clip=… (Shortcut) or ?url= / ?text= (share sheet) ----- */
 const qs=new URLSearchParams(location.search),inc=qs.get('clip')||qs.get('url')||linkIn(qs.get('text'))||'';
 if(inc){history.replaceState(null,'',location.pathname);
-  setTimeout(()=>clipDialog(linkIn(inc)||inc,null,()=>{show('library');renderLibrary();}),400);}
+  /* this copy may be days old (Safari): let the first sync bring it up to date before saving,
+     or an old copy would win over newer settings from the app */
+  const open=async()=>{const Y=window.BLOCK_SYNC;let note='',block=false;
+    if(!Y||!Y.signedIn())note='Not signed in here, so the clip stays in this browser. Sign in under Settings → Sync to get it in the app on your other devices.';
+    else if(!(await Y.ready(10000))){note='Could not reach sync, so this copy may be out of date. Open the link again when you are online.';block=true;}
+    clipDialog(linkIn(inc)||inc,null,()=>{show('library');renderLibrary();},{note,block});};
+  setTimeout(open,400);}
 })();

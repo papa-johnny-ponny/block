@@ -64,6 +64,8 @@ const rd=k=>{try{return JSON.parse(localStorage.getItem(k));}catch(e){return nul
 const wr=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let auth=rd(AUTH_KEY),meta=rd(META_KEY)||{},pending=false,running=false,timer=null;
+/* resolves after the first sync of this page load: true when it went through */
+let firstDone=null;const first=new Promise(r=>{firstDone=r;});
 let SEL='data,cal_skips';   // falls back to 'data' if the calendar column is not there yet
 const ui={email:'',msg:''};
 
@@ -117,7 +119,7 @@ async function sync(force){
         body:JSON.stringify({user_id:auth.uid,data:up,updated_at:new Date().toISOString(),...(folded?{cal_skips:{}}:{})})});
     meta.last=Date.now();meta.err=null;
   }catch(e){meta.err=e.message||String(e);}
-  finally{running=false;wr(META_KEY,meta);paint();if(pending)setTimeout(sync,800);}
+  finally{running=false;wr(META_KEY,meta);paint();if(firstDone){firstDone(!meta.err);firstDone=null;}if(pending)setTimeout(sync,800);}
 }
 const schedule=()=>{if(!auth)return;clearTimeout(timer);timer=setTimeout(sync,2000);};
 
@@ -179,6 +181,7 @@ renderSettings=function(){_renderSettings();
 /* ----- when to sync ----- */
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sync();});
 window.addEventListener('online',()=>sync());
-window.BLOCK_SYNC={signedIn:()=>!!auth,token,url:SB_URL,key:SB_KEY,onSignIn:[]};
+window.BLOCK_SYNC={signedIn:()=>!!auth,token,url:SB_URL,key:SB_KEY,onSignIn:[],
+  ready:(ms=10000)=>auth?Promise.race([first,new Promise(r=>setTimeout(()=>r(false),ms))]):Promise.resolve(true)};
 if(auth)sync();
 })();
